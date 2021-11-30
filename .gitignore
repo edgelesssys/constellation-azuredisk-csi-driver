@@ -71,3 +71,5 @@ cscope.*
 
 # golangci-lint
 /bin/*
+
+csi-credentials/

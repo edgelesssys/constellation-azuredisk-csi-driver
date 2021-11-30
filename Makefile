@@ -14,12 +14,12 @@
 
 PKG = sigs.k8s.io/azuredisk-csi-driver
 GIT_COMMIT ?= $(shell git rev-parse HEAD)
-REGISTRY ?= andyzhangx
+REGISTRY ?= ghcr.io/edgelesssys
 REGISTRY_NAME ?= $(shell echo $(REGISTRY) | sed "s/.azurecr.io//g")
-IMAGE_NAME ?= azuredisk-csi
+IMAGE_NAME ?= encrypted-azure-csi-driver
 ifneq ($(BUILD_V2), true)
 PLUGIN_NAME = azurediskplugin
-IMAGE_VERSION ?= v1.10.0
+IMAGE_VERSION ?= v0.0.1
 CHART_VERSION ?= latest
 else
 PLUGIN_NAME = azurediskpluginv2
@@ -157,7 +157,7 @@ azuredisk-darwin:
 
 .PHONY: container
 container: azuredisk
-	docker build --no-cache -t $(IMAGE_TAG) --output=type=docker -f ./pkg/azurediskplugin/Dockerfile .
+	DOCKER_BUILDKIT=1 docker build -t $(IMAGE_TAG) -f ./pkg/azurediskplugin/Dockerfile .
 
 .PHONY: container-linux
 container-linux:
