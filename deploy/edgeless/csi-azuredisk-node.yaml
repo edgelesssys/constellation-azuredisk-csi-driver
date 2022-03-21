@@ -87,7 +87,7 @@ spec:
               memory: 20Mi
         - name: azuredisk
           image: ghcr.io/edgelesssys/encrypted-azure-csi-driver:v0.0.1
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           args:
             - "--v=5"
             - "--endpoint=$(CSI_ENDPOINT)"
@@ -97,6 +97,8 @@ spec:
             - "--allow-empty-cloud-config=true"
             - "--cloud-config-secret-name=azure-cloud-provider"
             - "--cloud-config-secret-namespace=kube-system"
+            - "--constellation-addr=10.118.0.1:9027"
+            - "--integrity=false"
           ports:
             - containerPort: 29603
               name: healthz

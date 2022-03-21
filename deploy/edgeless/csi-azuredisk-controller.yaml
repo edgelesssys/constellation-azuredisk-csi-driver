@@ -133,7 +133,7 @@ spec:
               memory: 20Mi
         - name: azuredisk
           image: ghcr.io/edgelesssys/encrypted-azure-csi-driver:v0.0.1
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           args:
             - "--v=5"
             - "--endpoint=$(CSI_ENDPOINT)"

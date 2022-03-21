@@ -19,12 +19,16 @@ package azuredisk
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+
+	"github.com/edgelesssys/constellation/mount/pkg/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/mount/pkg/kms"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -66,6 +70,8 @@ type DriverOptions struct {
 	SupportZone                bool
 	GetNodeInfoFromLabels      bool
 	EnableDiskCapacityCheck    bool
+	DMIntegrity                bool
+	ConstellationAddr          string
 }
 
 // CSIDriver defines the interface for a CSI driver.
@@ -105,6 +111,9 @@ type DriverCore struct {
 	supportZone                bool
 	getNodeInfoFromLabels      bool
 	enableDiskCapacityCheck    bool
+	dmIntegrity                bool
+	evalSymLinks               func(string) (string, error)
+	CryptMapper                *cryptmapper.CryptMapper
 }
 
 // Driver is the v1 implementation of the Azure Disk CSI Driver.
@@ -137,9 +146,18 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.supportZone = options.SupportZone
 	driver.getNodeInfoFromLabels = options.GetNodeInfoFromLabels
 	driver.enableDiskCapacityCheck = options.EnableDiskCapacityCheck
+	driver.dmIntegrity = options.DMIntegrity
 	driver.volumeLocks = volumehelper.NewVolumeLocks()
 	driver.ioHandler = azureutils.NewOSIOHandler()
 	driver.hostUtil = hostutil.NewHostUtil()
+	driver.evalSymLinks = filepath.EvalSymlinks
+
+	// [Edgeless] set up Constellation key management
+	driver.CryptMapper = cryptmapper.New(
+		cryptKms.NewConstellationKMS(options.ConstellationAddr),
+		"",
+		&cryptmapper.CryptDevice{},
+	)
 
 	topologyKey = fmt.Sprintf("topology.%s/zone", driver.Name)
 

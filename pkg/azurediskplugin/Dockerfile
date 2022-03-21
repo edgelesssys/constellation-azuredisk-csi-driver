@@ -15,12 +15,11 @@
 FROM k8s.gcr.io/build-image/debian-base:bullseye-v1.1.0
 
 RUN apt update && apt-mark unhold libcap2
-RUN clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs
+RUN clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs libcryptsetup-dev
 # install updated packages to fix CVE issues
 RUN clean-install libgmp10 bsdutils
 
-LABEL maintainers="andyzhangx"
-LABEL description="Azure Disk CSI Driver"
+LABEL description="Azure Disk CSI Driver [Edgeless Fork]"
 
 ARG ARCH=amd64
 ARG PLUGIN_NAME=azurediskplugin

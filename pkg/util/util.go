@@ -103,7 +103,7 @@ func ConvertTagsToMap(tags string) (map[string]string, error) {
 }
 
 func MakeDir(pathname string) error {
-	err := os.MkdirAll(pathname, os.FileMode(0755))
+	err := os.MkdirAll(pathname, os.FileMode(0o755))
 	if err != nil {
 		if !os.IsExist(err) {
 			return err
@@ -113,7 +113,7 @@ func MakeDir(pathname string) error {
 }
 
 func MakeFile(pathname string) error {
-	f, err := os.OpenFile(pathname, os.O_CREATE|os.O_RDWR, os.FileMode(0755))
+	f, err := os.OpenFile(pathname, os.O_CREATE|os.O_RDWR, os.FileMode(0o755))
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %v", pathname, err)
 	}
@@ -148,4 +148,20 @@ func (vl *VolumeLocks) Release(volumeID string) {
 	vl.mux.Lock()
 	defer vl.mux.Unlock()
 	vl.locks.Delete(volumeID)
+}
+
+// GetVolumeName parses an Azure disk URI and returns its name
+func GetVolumeName(diskURI string) (string, error) {
+	const diskURITotatlElements = 8
+	diskURI = strings.TrimPrefix(diskURI, "/")
+	splitURI := strings.Split(diskURI, "/")
+	// diskURI has the form: /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/disks/<disk-name>
+	if len(splitURI) != diskURITotatlElements {
+		return "", fmt.Errorf("invalid disk URI: [%s], expected %d elements but got %d", diskURI, diskURITotatlElements, len(splitURI))
+	}
+	if splitURI[7] == "" {
+		return "", fmt.Errorf("missing disk name in URI: [%s]", diskURI)
+	}
+
+	return splitURI[7], nil
 }
