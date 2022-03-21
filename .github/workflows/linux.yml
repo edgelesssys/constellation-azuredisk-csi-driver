@@ -1,7 +1,10 @@
 name: Linux Build & Unit Tests
 on:
-    pull_request: {}
-    push: {}
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
 jobs:
   build:
     name: Build
@@ -21,10 +24,3 @@ jobs:
       run: |
         make verify
         go test -covermode=count -coverprofile=profile.cov ./pkg/...
-
-    - name: Send coverage
-      env:
-        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        GO111MODULE=off go get github.com/mattn/goveralls
-        $(go env GOPATH)/bin/goveralls -coverprofile=profile.cov -service=github
