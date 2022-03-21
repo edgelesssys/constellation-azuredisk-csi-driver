@@ -19,12 +19,16 @@ package azuredisk
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+
+	"github.com/edgelesssys/constellation/mount/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/mount/kms"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,6 +44,7 @@ import (
 	csicommon "sigs.k8s.io/azuredisk-csi-driver/pkg/csi-common"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/mounter"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
+	"sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 	azurecloudconsts "sigs.k8s.io/cloud-provider-azure/pkg/consts"
@@ -66,6 +71,8 @@ type DriverOptions struct {
 	SupportZone                bool
 	GetNodeInfoFromLabels      bool
 	EnableDiskCapacityCheck    bool
+	DMIntegrity                bool
+	ConstellationAddr          string
 }
 
 // CSIDriver defines the interface for a CSI driver.
@@ -105,6 +112,10 @@ type DriverCore struct {
 	supportZone                bool
 	getNodeInfoFromLabels      bool
 	enableDiskCapacityCheck    bool
+	dmIntegrity                bool
+	getVolumeName              func(string) (string, error)
+	evalSymLinks               func(string) (string, error)
+	cryptMapper                *cryptmapper.CryptMapper
 }
 
 // Driver is the v1 implementation of the Azure Disk CSI Driver.
@@ -140,6 +151,15 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.volumeLocks = volumehelper.NewVolumeLocks()
 	driver.ioHandler = azureutils.NewOSIOHandler()
 	driver.hostUtil = hostutil.NewHostUtil()
+
+	// [Edgeless] set up dm-crypt
+	driver.dmIntegrity = options.DMIntegrity
+	driver.evalSymLinks = filepath.EvalSymlinks
+	driver.getVolumeName = util.GetVolumeName
+	driver.cryptMapper = cryptmapper.New(
+		cryptKms.NewConstellationKMS(options.ConstellationAddr),
+		&cryptmapper.CryptDevice{},
+	)
 
 	topologyKey = fmt.Sprintf("topology.%s/zone", driver.Name)
 

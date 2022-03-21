@@ -97,6 +97,8 @@ spec:
             - "--allow-empty-cloud-config=true"
             - "--cloud-config-secret-name=azure-cloud-provider"
             - "--cloud-config-secret-namespace=kube-system"
+            - "--constellation-addr=10.118.0.1:9027"
+            - "--integrity=false"
           ports:
             - containerPort: 29603
               name: healthz
@@ -131,8 +133,6 @@ spec:
             - mountPath: /var/lib/kubelet/
               mountPropagation: Bidirectional
               name: mountpoint-dir
-            - mountPath: /etc/kubernetes/
-              name: azure-cred
             - mountPath: /dev
               name: device-dir
             - mountPath: /sys/bus/scsi/devices
@@ -159,10 +159,6 @@ spec:
             path: /var/lib/kubelet/plugins_registry/
             type: DirectoryOrCreate
           name: registration-dir
-        - hostPath:
-            path: /etc/kubernetes/
-            type: DirectoryOrCreate
-          name: azure-cred
         - hostPath:
             path: /dev
             type: Directory

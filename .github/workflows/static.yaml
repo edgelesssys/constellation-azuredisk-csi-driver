@@ -8,12 +8,12 @@ on:
 jobs:
   go_lint:
     name: Go Lint
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
         uses: actions/checkout@master
       - name: Run linter
-      uses: golangci/golangci-lint-action@v2
-      with:
-        version: v1.43
-        args: -E=gofmt,deadcode,unused,varcheck,ineffassign,revive,misspell,exportloopref,asciicheck,bodyclose,depguard,dogsled,durationcheck,errname,forbidigo -D=staticcheck --timeout=30m0s
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.43
+          args: -E=gofmt,deadcode,unused,varcheck,ineffassign,revive,misspell,exportloopref,asciicheck,bodyclose,depguard,dogsled,durationcheck,errname,forbidigo -D=staticcheck --timeout=30m0s
