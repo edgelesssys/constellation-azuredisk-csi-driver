@@ -9,7 +9,7 @@ spec:
   storageClassName: encrypted-storage
   resources:
     requests:
-      storage: 20Gi
+      storage: 10Gi
 ---
 apiVersion: v1
 kind: Pod

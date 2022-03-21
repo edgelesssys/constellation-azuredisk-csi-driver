@@ -19,6 +19,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -103,7 +104,7 @@ func ConvertTagsToMap(tags string) (map[string]string, error) {
 }
 
 func MakeDir(pathname string) error {
-	err := os.MkdirAll(pathname, os.FileMode(0755))
+	err := os.MkdirAll(pathname, os.FileMode(0o755))
 	if err != nil {
 		if !os.IsExist(err) {
 			return err
@@ -113,7 +114,7 @@ func MakeDir(pathname string) error {
 }
 
 func MakeFile(pathname string) error {
-	f, err := os.OpenFile(pathname, os.O_CREATE|os.O_RDWR, os.FileMode(0755))
+	f, err := os.OpenFile(pathname, os.O_CREATE|os.O_RDWR, os.FileMode(0o755))
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %v", pathname, err)
 	}
@@ -148,4 +149,14 @@ func (vl *VolumeLocks) Release(volumeID string) {
 	vl.mux.Lock()
 	defer vl.mux.Unlock()
 	vl.locks.Delete(volumeID)
+}
+
+// GetVolumeName parses an Azure disk URI and returns its name
+func GetVolumeName(diskURI string) (string, error) {
+	r := regexp.MustCompile(`Microsoft\.Compute\/disks\/(\S+)`)
+	match := r.FindStringSubmatch(diskURI)
+	if len(match) != 2 {
+		return "", fmt.Errorf("could not parse disk name from URI: %s", diskURI)
+	}
+	return match[1], nil
 }

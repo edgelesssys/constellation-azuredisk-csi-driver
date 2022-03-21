@@ -90,7 +90,7 @@ spec:
   storageClassName: encrypted-storage
   resources:
     requests:
-      storage: 20Gi
+      storage: 10Gi
 ---
 apiVersion: v1
 kind: Pod
@@ -111,6 +111,22 @@ spec:
       readOnly: false
 EOF
 ```
+
+## Enabling integrity protection
+
+By default the CSI driver will transparently encrypt all disks staged on the node.
+Optionally, you can configure the driver to also apply integrity protection.
+
+Please note that enabling integrity protection requires wiping the disk before use.
+For small disks (10GB-20GB) this may only take a minute or two, while larger disks can take up to an hour or more, potentially blocking your Pods from starting for that time.
+If you intend to provision large amounts of storage and Pod creation speed is important, we recommend to not use this option.
+
+To enable integrity protection support for the CSI driver, set `--integrity` to `true` in `deploy/edgeless/csi-azuredisk-node.yaml` and apply the changes:
+```shell
+sed -i s/--integrity=false/--integrity=true/g ./deploy/edgeless/csi-azuredisk-node.yaml
+kubectl apply -f deploy/edgeless
+```
+
 
 ## Cleanup
 

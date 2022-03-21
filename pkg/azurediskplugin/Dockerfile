@@ -14,10 +14,9 @@
 
 FROM registry.k8s.io/build-image/debian-base:bullseye-v1.2.0
 
-RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs
+RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs libcryptsetup-dev
 
-LABEL maintainers="andyzhangx"
-LABEL description="Azure Disk CSI Driver"
+LABEL description="Azure Disk CSI Driver [Edgeless Fork]"
 
 ARG ARCH=amd64
 ARG PLUGIN_NAME=azurediskplugin
