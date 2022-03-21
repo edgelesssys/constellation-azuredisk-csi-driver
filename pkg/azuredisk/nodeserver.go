@@ -66,6 +66,11 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
 	}
 
+	diskName, err := d.getVolumeName(diskURI)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
+	}
+
 	target := req.GetStagingTargetPath()
 	if len(target) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Staging target not provided")
@@ -155,14 +160,24 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		source = source + "-part" + partition
 	}
 
-	// FormatAndMount will format only if needed
-	klog.V(2).Infof("NodeStageVolume: formatting %s and mounting at %s with mount options(%s)", source, target, options)
-	err = d.formatAndMount(source, target, fstype, options)
+	// [Edgeless] Map the device as a crypt device, creating a new LUKS partition if needed
+	devicePathReal, err := d.evalSymLinks(source)
 	if err != nil {
-		msg := fmt.Sprintf("could not format %q(lun: %q), and mount it at %q", source, lun, target)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
+	}
+	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, d.dmIntegrity)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
+	}
+
+	// FormatAndMount will format only if needed
+	klog.V(2).Infof("NodeStageVolume: formatting %s and mounting at %s with mount options(%s)", devicePath, target, options)
+	err = d.formatAndMount(devicePath, target, fstype, options)
+	if err != nil {
+		msg := fmt.Sprintf("could not format %q(lun: %q), and mount it at %q", devicePath, lun, target)
 		return nil, status.Error(codes.Internal, msg)
 	}
-	klog.V(2).Infof("NodeStageVolume: format %s and mounting at %s successfully.", source, target)
+	klog.V(2).Infof("NodeStageVolume: format %s and mounting at %s successfully.", devicePath, target)
 
 	// if resize is required, resize filesystem
 	if required, ok := req.GetVolumeContext()[consts.ResizeRequired]; ok && required == "true" {
@@ -172,8 +187,8 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		}
 
 		resizer := mount.NewResizeFs(d.mounter.Exec)
-		if _, err := resizer.Resize(source, target); err != nil {
-			return nil, status.Errorf(codes.Internal, "NodeStageVolume: could not resize volume %q (%q):  %v", diskURI, source, err)
+		if _, err := resizer.Resize(devicePath, target); err != nil {
+			return nil, status.Errorf(codes.Internal, "NodeStageVolume: could not resize volume %q (%q):  %v", diskURI, devicePath, err)
 		}
 
 		klog.V(2).Infof("NodeStageVolume: fs resize successful on target(%s) volumeid(%s).", target, diskURI)
@@ -188,6 +203,10 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
 	}
+	diskName, err := d.getVolumeName(volumeID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
+	}
 
 	stagingTargetPath := req.GetStagingTargetPath()
 	if len(stagingTargetPath) == 0 {
@@ -200,10 +219,16 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	defer d.volumeLocks.Release(volumeID)
 
 	klog.V(2).Infof("NodeUnstageVolume: unmounting %s", stagingTargetPath)
-	err := CleanupMountPoint(stagingTargetPath, d.mounter, true /*extensiveMountPointCheck*/)
+	err = CleanupMountPoint(stagingTargetPath, d.mounter, true /*extensiveMountPointCheck*/)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to unmount staging target %q: %v", stagingTargetPath, err)
 	}
+
+	// [Edgeless] Unmap the crypt device so we can properly remove the device from the node
+	if err := d.cryptMapper.CloseCryptDevice(diskName); err != nil {
+		return nil, status.Errorf(codes.Internal, "NodeUnstageVolume failed to close mapped crypt device for disk %s: %v", stagingTargetPath, err)
+	}
+
 	klog.V(2).Infof("NodeUnstageVolume: unmount %s successfully", stagingTargetPath)
 
 	return &csi.NodeUnstageVolumeResponse{}, nil

@@ -140,7 +140,7 @@ func TestMakeDir(t *testing.T) {
 		{
 			desc: "should not return error if path already exists",
 			setup: func() {
-				err := os.Mkdir("./target_test", os.FileMode(0755))
+				err := os.Mkdir("./target_test", os.FileMode(0o755))
 				assert.NoError(t, err, "Failed in setup: %v", err)
 			},
 			targetDir:     "./target_test",
@@ -195,7 +195,7 @@ func TestMakeFile(t *testing.T) {
 		{
 			desc: "[Error] directory exists with the target file name",
 			setup: func() {
-				err := os.Mkdir("./target_test", os.FileMode(0755))
+				err := os.Mkdir("./target_test", os.FileMode(0o755))
 				assert.NoError(t, err, "Failed in setup: %v", err)
 			},
 			targetFile:    "./target_test",
@@ -262,5 +262,44 @@ func TestVolumeLock(t *testing.T) {
 		if testCase.cleanup != nil {
 			testCase.cleanup()
 		}
+	}
+}
+
+func TestGetVolumeName(t *testing.T) {
+	testCases := map[string]struct {
+		diskName    string
+		diskURI     string
+		errExpected bool
+	}{
+		"valid URI": {
+			diskName: "pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+			diskURI:  "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+		},
+		"valid URI with different name": {
+			diskName: "some-disk",
+			diskURI:  "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/some-disk",
+		},
+		"invalid URI": {
+			diskURI:     "not-a-disk-URI",
+			errExpected: true,
+		},
+		"no disk name in URI": {
+			diskURI:     "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/",
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			name, err := GetVolumeName(tc.diskURI)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.diskName, name)
+			}
+		})
 	}
 }
