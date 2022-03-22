@@ -72,7 +72,7 @@ spec:
             - name: ADDRESS
               value: /csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
-              value: /var/lib/kubelet/plugins/disk.csi.azure.com/csi.sock
+              value: /var/lib/kubelet/plugins/azuredisk.csi.confidential.cloud/csi.sock
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -148,7 +148,7 @@ spec:
               memory: 20Mi
       volumes:
         - hostPath:
-            path: /var/lib/kubelet/plugins/disk.csi.azure.com
+            path: /var/lib/kubelet/plugins/azuredisk.csi.confidential.cloud
             type: DirectoryOrCreate
           name: socket-dir
         - hostPath:

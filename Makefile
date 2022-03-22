@@ -19,7 +19,7 @@ REGISTRY_NAME ?= $(shell echo $(REGISTRY) | sed "s/.azurecr.io//g")
 IMAGE_NAME ?= encrypted-azure-csi-driver
 ifneq ($(BUILD_V2), true)
 PLUGIN_NAME = azurediskplugin
-IMAGE_VERSION ?= v0.0.1
+IMAGE_VERSION ?= v0.1.0
 CHART_VERSION ?= latest
 else
 PLUGIN_NAME = azurediskpluginv2

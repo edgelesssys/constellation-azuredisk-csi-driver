@@ -67,7 +67,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: encrypted-storage
-provisioner: disk.csi.azure.com
+provisioner: azuredisk.csi.confidential.cloud
 parameters:
   skuName: StandardSSD_LRS
 reclaimPolicy: Delete
