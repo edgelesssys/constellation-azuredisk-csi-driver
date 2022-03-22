@@ -23,7 +23,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/edgelesssys/constellation/mount/pkg/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/mount/pkg/kms"
 	"github.com/golang/mock/gomock"
+	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/mount-utils"
 	testingexec "k8s.io/utils/exec/testing"
@@ -62,6 +65,40 @@ var (
 		LimitBytes:    volumehelper.GiBToBytes(15),
 	}
 )
+
+type stubCryptDevice struct{}
+
+func (c *stubCryptDevice) Init(devicePath string) error {
+	return nil
+}
+
+func (c *stubCryptDevice) ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error {
+	return nil
+}
+
+func (c *stubCryptDevice) Deactivate(deviceName string) error {
+	return nil
+}
+
+func (c *stubCryptDevice) Format(deviceType cryptsetup.DeviceType, genericParams cryptsetup.GenericParams) error {
+	return nil
+}
+
+func (c *stubCryptDevice) Free() bool {
+	return true
+}
+
+func (c *stubCryptDevice) Load() error {
+	return nil
+}
+
+func (c *stubCryptDevice) Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error {
+	return nil
+}
+
+func fakeEvalSymlinks(path string) (string, error) {
+	return path, nil
+}
 
 // FakeDriver defines an interface unit tests use to test either the v1 or v2 implementation of the Azure Disk CSI Driver.
 type FakeDriver interface {
@@ -111,6 +148,9 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.ioHandler = azureutils.NewFakeIOHandler()
 	driver.hostUtil = azureutils.NewFakeHostUtil()
 	driver.useCSIProxyGAInterface = true
+	driver.dmIntegrity = false
+	driver.evalSymLinks = fakeEvalSymlinks
+	driver.cryptMapper = cryptmapper.New(cryptKms.NewStaticKMS(), "", &stubCryptDevice{})
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

@@ -165,7 +165,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
 	}
-	devicePath, err := d.CryptMapper.OpenCryptDevice(ctx, source, diskName, d.dmIntegrity)
+	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, d.dmIntegrity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
 	}
@@ -225,7 +225,7 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	}
 
 	// [Edgeless] Unmap the crypt device so we can properly remove the device from the node
-	if err := d.CryptMapper.CloseCryptDevice(diskName); err != nil {
+	if err := d.cryptMapper.CloseCryptDevice(diskName); err != nil {
 		return nil, status.Errorf(codes.Internal, "NodeUnstageVolume failed to close mapped crypt device for disk %s: %v", stagingTargetPath, err)
 	}
 

@@ -113,7 +113,7 @@ type DriverCore struct {
 	enableDiskCapacityCheck    bool
 	dmIntegrity                bool
 	evalSymLinks               func(string) (string, error)
-	CryptMapper                *cryptmapper.CryptMapper
+	cryptMapper                *cryptmapper.CryptMapper
 }
 
 // Driver is the v1 implementation of the Azure Disk CSI Driver.
@@ -146,14 +146,14 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.supportZone = options.SupportZone
 	driver.getNodeInfoFromLabels = options.GetNodeInfoFromLabels
 	driver.enableDiskCapacityCheck = options.EnableDiskCapacityCheck
-	driver.dmIntegrity = options.DMIntegrity
 	driver.volumeLocks = volumehelper.NewVolumeLocks()
 	driver.ioHandler = azureutils.NewOSIOHandler()
 	driver.hostUtil = hostutil.NewHostUtil()
-	driver.evalSymLinks = filepath.EvalSymlinks
 
-	// [Edgeless] set up Constellation key management
-	driver.CryptMapper = cryptmapper.New(
+	// [Edgeless] set up dm-crypt
+	driver.dmIntegrity = options.DMIntegrity
+	driver.evalSymLinks = filepath.EvalSymlinks
+	driver.cryptMapper = cryptmapper.New(
 		cryptKms.NewConstellationKMS(options.ConstellationAddr),
 		"",
 		&cryptmapper.CryptDevice{},
