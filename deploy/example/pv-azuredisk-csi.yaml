@@ -10,7 +10,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   csi:
-    driver: disk.csi.azure.com
+    driver: azuredisk.csi.confidential.cloud
     readOnly: false
     volumeHandle: /subscriptions/{sub-id}/resourcegroups/{group-name}/providers/microsoft.compute/disks/{disk-id}
     volumeAttributes:
