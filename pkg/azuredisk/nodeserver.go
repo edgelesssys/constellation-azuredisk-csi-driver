@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
-	"sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 
@@ -66,7 +65,8 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	if len(diskURI) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
 	}
-	diskName, err := util.GetVolumeName(diskURI)
+
+	diskName, err := d.getVolumeName(diskURI)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 	}
@@ -203,7 +203,7 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
 	}
-	diskName, err := util.GetVolumeName(volumeID)
+	diskName, err := d.getVolumeName(volumeID)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 	}

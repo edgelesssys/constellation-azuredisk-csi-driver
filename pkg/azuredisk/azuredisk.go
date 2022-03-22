@@ -44,6 +44,7 @@ import (
 	csicommon "sigs.k8s.io/azuredisk-csi-driver/pkg/csi-common"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/mounter"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
+	"sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 	azurecloudconsts "sigs.k8s.io/cloud-provider-azure/pkg/consts"
@@ -112,6 +113,7 @@ type DriverCore struct {
 	getNodeInfoFromLabels      bool
 	enableDiskCapacityCheck    bool
 	dmIntegrity                bool
+	getVolumeName              func(string) (string, error)
 	evalSymLinks               func(string) (string, error)
 	cryptMapper                *cryptmapper.CryptMapper
 }
@@ -153,6 +155,7 @@ func newDriverV1(options *DriverOptions) *Driver {
 	// [Edgeless] set up dm-crypt
 	driver.dmIntegrity = options.DMIntegrity
 	driver.evalSymLinks = filepath.EvalSymlinks
+	driver.getVolumeName = util.GetVolumeName
 	driver.cryptMapper = cryptmapper.New(
 		cryptKms.NewConstellationKMS(options.ConstellationAddr),
 		"",

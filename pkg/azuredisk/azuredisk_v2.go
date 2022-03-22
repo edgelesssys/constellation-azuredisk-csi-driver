@@ -84,6 +84,7 @@ func newDriverV2(options *DriverOptions) *DriverV2 {
 	// [Edgeless] set up dm-crypt
 	driver.dmIntegrity = options.DMIntegrity
 	driver.evalSymLinks = filepath.EvalSymlinks
+	driver.getVolumeName = volumehelper.GetVolumeName
 	driver.cryptMapper = cryptmapper.New(
 		cryptKms.NewConstellationKMS(options.ConstellationAddr),
 		"",

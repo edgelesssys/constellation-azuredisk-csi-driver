@@ -155,9 +155,9 @@ func GetVolumeName(diskURI string) (string, error) {
 	const diskURITotatlElements = 8
 	diskURI = strings.TrimPrefix(diskURI, "/")
 	splitURI := strings.Split(diskURI, "/")
-	// diskURI has the form: /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/disks/<disk-name>
+	// diskURI has the form: /subscriptions/{subscription-id}/resourceGroups/{group}/providers/Microsoft.Compute/disks/{name}
 	if len(splitURI) != diskURITotatlElements {
-		return "", fmt.Errorf("invalid disk URI: [%s], expected %d elements but got %d", diskURI, diskURITotatlElements, len(splitURI))
+		return "", fmt.Errorf("invalid disk URI: expected /subscriptions/{subscription-id}/resourceGroups/{group}/providers/Microsoft.Compute/disks/{name} but got %s", diskURI)
 	}
 	if splitURI[7] == "" {
 		return "", fmt.Errorf("missing disk name in URI: [%s]", diskURI)

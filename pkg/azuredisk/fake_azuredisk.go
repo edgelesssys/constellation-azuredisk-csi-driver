@@ -26,7 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/mount/pkg/cryptmapper"
 	cryptKms "github.com/edgelesssys/constellation/mount/pkg/kms"
 	"github.com/golang/mock/gomock"
-	"github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/mount-utils"
 	testingexec "k8s.io/utils/exec/testing"
@@ -88,7 +88,7 @@ func (c *stubCryptDevice) Free() bool {
 	return true
 }
 
-func (c *stubCryptDevice) Load() error {
+func (c *stubCryptDevice) Load(cryptsetup.DeviceType) error {
 	return nil
 }
 
@@ -150,6 +150,7 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.useCSIProxyGAInterface = true
 	driver.dmIntegrity = false
 	driver.evalSymLinks = fakeEvalSymlinks
+	driver.getVolumeName = func(s string) (string, error) { return s, nil }
 	driver.cryptMapper = cryptmapper.New(cryptKms.NewStaticKMS(), "", &stubCryptDevice{})
 
 	ctrl := gomock.NewController(t)
