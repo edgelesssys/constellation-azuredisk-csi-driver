@@ -7,13 +7,13 @@ The metrics emitted by the Azure Disk CSI Driver fall broadly into two categorie
 | Name | `request` | `source` | Description |
 |------|-----------|----------|-------------|
 | `cloudprovider_azure_op_duration_seconds` | | | Records the CSI operation metrics |
-| | `azuredisk_csi_driver_controller_create_volume` | `disk.csi.azure.com` | `ControllerCreateVolume` latency |
-| | `azuredisk_csi_driver_controller_delete_volume` | `disk.csi.azure.com` | `ControllerDeleteVolume` latency |
-| | `azuredisk_csi_driver_controller_expand_volume` | `disk.csi.azure.com` | `ControllerExpandVolume` latency |
-| | `azuredisk_csi_driver_controller_create_snapshot` | `disk.csi.azure.com` | `ControllerCreateSnapshot` latency |
-| | `azuredisk_csi_driver_controller_delete_snapshot` | `disk.csi.azure.com` | `ControllerDeleteSnapshot` latency |
-| | `azuredisk_csi_driver_controller_publish_volume` | `disk.csi.azure.com` | `ControllerPublishVolume` latency |
-| | `azuredisk_csi_driver_controller_unpublish_volume` | `disk.csi.azure.com` | `ControllerUnpublishVolume` latency |
+| | `azuredisk_csi_driver_controller_create_volume` | `azuredisk.csi.confidential.cloud` | `ControllerCreateVolume` latency |
+| | `azuredisk_csi_driver_controller_delete_volume` | `azuredisk.csi.confidential.cloud` | `ControllerDeleteVolume` latency |
+| | `azuredisk_csi_driver_controller_expand_volume` | `azuredisk.csi.confidential.cloud` | `ControllerExpandVolume` latency |
+| | `azuredisk_csi_driver_controller_create_snapshot` | `azuredisk.csi.confidential.cloud` | `ControllerCreateSnapshot` latency |
+| | `azuredisk_csi_driver_controller_delete_snapshot` | `azuredisk.csi.confidential.cloud` | `ControllerDeleteSnapshot` latency |
+| | `azuredisk_csi_driver_controller_publish_volume` | `azuredisk.csi.confidential.cloud` | `ControllerPublishVolume` latency |
+| | `azuredisk_csi_driver_controller_unpublish_volume` | `azuredisk.csi.confidential.cloud` | `ControllerUnpublishVolume` latency |
 | `cloudprovider_azure_api_request_duration_seconds` | | | Records the Azure Cloud operation metrics |
 | | `disks_create_or_update` | | `create_disk` latency |
 | | `disks_delete` | | `delete_disk` latency |
@@ -71,10 +71,10 @@ curl http://localhost:29604/metrics | grep -E "cloudprovider_azure_op_duration_s
 We can calculate the average latency of each operation by dividing its `*_sum` by `*_count` metric. The `*_sum` value is in seconds. The following output shows an average `ControllerPublishVolume` latency of 9.5s and `ControllerUnpublishVolume` of 13.7s.
 
 ```
-cloudprovider_azure_op_duration_seconds_sum{request="azuredisk_csi_driver_controller_publish_volume",resource_group="edreed-k8s-failover-rg",source="disk.csi.azure.com",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 181.10639633399998
-cloudprovider_azure_op_duration_seconds_count{request="azuredisk_csi_driver_controller_publish_volume",resource_group="edreed-k8s-failover-rg",source="disk.csi.azure.com",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 19
-cloudprovider_azure_op_duration_seconds_sum{request="azuredisk_csi_driver_controller_unpublish_volume",resource_group="edreed-k8s-failover-rg",source="disk.csi.azure.com",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 232.39884008299998
-cloudprovider_azure_op_duration_seconds_count{request="azuredisk_csi_driver_controller_unpublish_volume",resource_group="edreed-k8s-failover-rg",source="disk.csi.azure.com",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 17
+cloudprovider_azure_op_duration_seconds_sum{request="azuredisk_csi_driver_controller_publish_volume",resource_group="edreed-k8s-failover-rg",source="azuredisk.csi.confidential.cloud",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 181.10639633399998
+cloudprovider_azure_op_duration_seconds_count{request="azuredisk_csi_driver_controller_publish_volume",resource_group="edreed-k8s-failover-rg",source="azuredisk.csi.confidential.cloud",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 19
+cloudprovider_azure_op_duration_seconds_sum{request="azuredisk_csi_driver_controller_unpublish_volume",resource_group="edreed-k8s-failover-rg",source="azuredisk.csi.confidential.cloud",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 232.39884008299998
+cloudprovider_azure_op_duration_seconds_count{request="azuredisk_csi_driver_controller_unpublish_volume",resource_group="edreed-k8s-failover-rg",source="azuredisk.csi.confidential.cloud",subscription_id="d64ddb0c-7399-4529-a2b6-037b33265372"} 17
 ```
 
 ### Example: Get `attach_disk` and `detach_disk` metrics

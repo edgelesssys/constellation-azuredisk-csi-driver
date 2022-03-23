@@ -51,6 +51,7 @@ import (
 	v1beta19 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
 	v1beta20 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
 	v19 "k8s.io/client-go/kubernetes/typed/networking/v1"
+	v1alpha1X "k8s.io/client-go/kubernetes/typed/networking/v1alpha1"
 	v1beta110 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
 	v110 "k8s.io/client-go/kubernetes/typed/node/v1"
 	v1alpha12 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"

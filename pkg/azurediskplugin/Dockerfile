@@ -1,3 +1,21 @@
+# Copyright (c) Edgeless Systems GmbH
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This file incorporates work covered by the following copyright and
+# permission notice:
+#
+#
 # Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +32,9 @@
 
 FROM registry.k8s.io/build-image/debian-base:bullseye-v1.4.2
 
-RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs
+RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs libcryptsetup-dev
 
-LABEL maintainers="andyzhangx"
-LABEL description="Azure Disk CSI Driver"
+LABEL description="Azure Disk CSI Driver [Edgeless Fork]"
 
 ARG ARCH=amd64
 ARG PLUGIN_NAME=azurediskplugin
