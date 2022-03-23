@@ -1,4 +1,22 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
 Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,6 +81,30 @@ var (
 	}
 )
 
+type fakeCryptMapper struct {
+	deviceName string
+}
+
+func (s *fakeCryptMapper) CloseCryptDevice(volumeID string) error {
+	return nil
+}
+
+func (s *fakeCryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
+	return "/dev/mapper/" + volumeID, nil
+}
+
+func (s *fakeCryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
+	return s.deviceName, nil
+}
+
+func (s *fakeCryptMapper) GetDevicePath(volumeID string) (string, error) {
+	return s.deviceName, nil
+}
+
+func fakeEvalSymlinks(path string) (string, error) {
+	return path, nil
+}
+
 // FakeDriver defines an interface unit tests use to test either the v1 or v2 implementation of the Azure Disk CSI Driver.
 type FakeDriver interface {
 	CSIDriver
@@ -93,6 +135,8 @@ type FakeDriver interface {
 	ensureBlockTargetFile(string) error
 	getDevicePathWithLUN(lunStr string) (string, error)
 	setDiskThrottlingCache(key string, value string)
+
+	setDiskDeviceName(string)
 }
 
 type fakeDriverV1 struct {
@@ -112,6 +156,9 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.hostUtil = azureutils.NewFakeHostUtil()
 	driver.useCSIProxyGAInterface = true
 	driver.allowEmptyCloudConfig = true
+	driver.evalSymLinks = fakeEvalSymlinks
+	driver.getVolumeName = func(s string) (string, error) { return s, nil }
+	driver.cryptMapper = &fakeCryptMapper{}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -164,6 +211,10 @@ func (d *fakeDriverV1) setNextCommandOutputScripts(scripts ...testingexec.FakeAc
 
 func (d *fakeDriverV1) setDiskThrottlingCache(key string, value string) {
 	d.getDiskThrottlingCache.Set(key, value)
+}
+
+func (d *fakeDriverV1) setDiskDeviceName(name string) {
+	d.cryptMapper.(*fakeCryptMapper).deviceName = name
 }
 
 func createVolumeCapabilities(accessMode csi.VolumeCapability_AccessMode_Mode) []*csi.VolumeCapability {

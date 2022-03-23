@@ -1,4 +1,22 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
 Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,7 +114,6 @@ func TestMain(m *testing.M) {
 	}
 
 	_ = m.Run()
-
 }
 
 func TestNodeGetCapabilities(t *testing.T) {
@@ -468,8 +485,10 @@ func TestNodeStageVolume(t *testing.T) {
 		},
 		{
 			desc: "MaxShares value not supported",
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest, VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-				AccessType: stdVolCapBlock}, VolumeContext: volumeContextWithMaxShare},
+			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest, VolumeCapability: &csi.VolumeCapability{
+				AccessMode: &volumeCap,
+				AccessType: stdVolCapBlock,
+			}, VolumeContext: volumeContextWithMaxShare},
 			expectedErr: status.Error(codes.InvalidArgument, "MaxShares value not supported"),
 		},
 		{
@@ -477,8 +496,10 @@ func TestNodeStageVolume(t *testing.T) {
 			setupFunc: func(t *testing.T, d FakeDriver) {
 				d.getVolumeLocks().TryAcquire("vol_1")
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest, VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-				AccessType: stdVolCapBlock}},
+			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest, VolumeCapability: &csi.VolumeCapability{
+				AccessMode: &volumeCap,
+				AccessType: stdVolCapBlock,
+			}},
 			expectedErr: status.Error(codes.Aborted, fmt.Sprintf(volumeOperationAlreadyExistsFmt, "vol_1")),
 			cleanupFunc: func(t *testing.T, d FakeDriver) {
 				d.getVolumeLocks().Release("vol_1")
@@ -486,16 +507,21 @@ func TestNodeStageVolume(t *testing.T) {
 		},
 		{
 			desc: "Lun not provided",
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest, VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-				AccessType: stdVolCap}},
+			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest, VolumeCapability: &csi.VolumeCapability{
+				AccessMode: &volumeCap,
+				AccessType: stdVolCap,
+			}},
 			expectedErr: status.Error(codes.InvalidArgument, "lun not provided"),
 		},
 		{
 			desc:         "Invalid Lun",
 			skipOnDarwin: true,
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: invalidLUN,
 				VolumeContext:  volumeContext,
 			},
@@ -508,9 +534,12 @@ func TestNodeStageVolume(t *testing.T) {
 			setupFunc: func(t *testing.T, d FakeDriver) {
 				d.setNextCommandOutputScripts(blkidAction, fsckAction, blockSizeAction, blkidAction, blockSizeAction, blkidAction)
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: publishContext,
 				VolumeContext:  volumeContext,
 			},
@@ -523,9 +552,12 @@ func TestNodeStageVolume(t *testing.T) {
 			setupFunc: func(t *testing.T, d FakeDriver) {
 				d.setNextCommandOutputScripts(blkidAction, fsckAction, blkidAction, resize2fsAction)
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: publishContext,
 				VolumeContext:  volumeContextWithResize,
 			},
@@ -539,9 +571,12 @@ func TestNodeStageVolume(t *testing.T) {
 				d.setPerfOptimizationEnabled(true)
 				d.setNextCommandOutputScripts(blkidAction, fsckAction, blockSizeAction, blockSizeAction)
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: publishContext,
 				VolumeContext:  volumeContextWithPerfProfileField,
 			},
@@ -567,9 +602,12 @@ func TestNodeStageVolume(t *testing.T) {
 
 				d.setNextCommandOutputScripts(blkidAction, fsckAction, blockSizeAction, blockSizeAction)
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: publishContext,
 				VolumeContext:  volumeContext,
 			},
@@ -595,9 +633,12 @@ func TestNodeStageVolume(t *testing.T) {
 
 				d.setNextCommandOutputScripts(blkidAction, fsckAction, blockSizeAction, blockSizeAction)
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: publishContext,
 				VolumeContext:  volumeContext,
 			},
@@ -619,9 +660,12 @@ func TestNodeStageVolume(t *testing.T) {
 
 				d.setNextCommandOutputScripts(blkidAction, fsckAction, blockSizeAction, blockSizeAction)
 			},
-			req: csi.NodeStageVolumeRequest{VolumeId: "vol_1", StagingTargetPath: sourceTest,
-				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap,
-					AccessType: stdVolCap},
+			req: csi.NodeStageVolumeRequest{
+				VolumeId: "vol_1", StagingTargetPath: sourceTest,
+				VolumeCapability: &csi.VolumeCapability{
+					AccessMode: &volumeCap,
+					AccessType: stdVolCap,
+				},
 				PublishContext: publishContext,
 				VolumeContext:  volumeContext,
 			},
@@ -723,7 +767,7 @@ func TestNodeUnstageVolume(t *testing.T) {
 		},
 	}
 
-	//Setup
+	// Setup
 	_ = makeDir(errorTarget)
 	fakeMounter, err := mounter.NewFakeSafeMounter()
 	assert.NoError(t, err)
@@ -757,9 +801,6 @@ func TestNodePublishVolume(t *testing.T) {
 	volumeCapWrong := csi.VolumeCapability_AccessMode{Mode: 10}
 	volumeContextWithMaxShare := map[string]string{
 		consts.MaxSharesField: "0.1",
-	}
-	publishContext := map[string]string{
-		consts.LUN: "/dev/01",
 	}
 	errorMountSource, err := testutil.GetWorkDirPath("error_mount_source")
 	assert.NoError(t, err)
@@ -807,45 +848,55 @@ func TestNodePublishVolume(t *testing.T) {
 		},
 		{
 			desc: "MaxShares value not supported",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
-				VolumeId:      "vol_1",
-				VolumeContext: volumeContextWithMaxShare},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
+				VolumeId:         "vol_1",
+				VolumeContext:    volumeContextWithMaxShare,
+			},
 			expectedErr: testutil.TestError{
 				DefaultError: status.Error(codes.InvalidArgument, "MaxShares value not supported"),
 			},
 		},
 		{
 			desc: "Volume capability not supported",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCapWrong, AccessType: stdVolCapBlock},
-				VolumeId: "vol_1"},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCapWrong, AccessType: stdVolCapBlock},
+				VolumeId:         "vol_1",
+			},
 			expectedErr: testutil.TestError{
 				DefaultError: status.Error(codes.InvalidArgument, "Volume capability not supported"),
 			},
 		},
 		{
 			desc: "Staging target path missing",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
-				VolumeId: "vol_1"},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
+				VolumeId:         "vol_1",
+			},
 			expectedErr: testutil.TestError{
 				DefaultError: status.Error(codes.InvalidArgument, "Staging target not provided"),
 			},
 		},
 		{
 			desc: "Target path missing",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
 				VolumeId:          "vol_1",
-				StagingTargetPath: sourceTest},
+				StagingTargetPath: sourceTest,
+			},
 			expectedErr: testutil.TestError{
 				DefaultError: status.Error(codes.InvalidArgument, "Target path not provided"),
 			},
 		},
 		{
 			desc: "[Error] Not a directory",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
 				VolumeId:          "vol_1",
 				TargetPath:        azuredisk,
 				StagingTargetPath: sourceTest,
-				Readonly:          true},
+				Readonly:          true,
+			},
 			skipOnWindows: true, // permission issues
 			skipOnDarwin:  true,
 			expectedErr: testutil.TestError{
@@ -854,35 +905,14 @@ func TestNodePublishVolume(t *testing.T) {
 			},
 		},
 		{
-			desc: "[Error] Lun not provided",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
-				VolumeId:          "vol_1",
-				TargetPath:        azuredisk,
-				StagingTargetPath: sourceTest,
-				Readonly:          true},
-			expectedErr: testutil.TestError{
-				DefaultError: status.Error(codes.InvalidArgument, "lun not provided"),
-			},
-		},
-		{
-			desc: "[Error] Lun not valid",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
-				VolumeId:          "vol_1",
-				TargetPath:        azuredisk,
-				StagingTargetPath: sourceTest,
-				PublishContext:    publishContext,
-				Readonly:          true},
-			expectedErr: testutil.TestError{
-				DefaultError: status.Error(codes.Internal, "failed to find device path with lun /dev/01. cannot parse deviceInfo: /dev/01"),
-			},
-		},
-		{
 			desc: "[Error] Mount error mocked by Mount",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
 				VolumeId:          "vol_1",
 				TargetPath:        targetTest,
 				StagingTargetPath: errorMountSource,
-				Readonly:          true},
+				Readonly:          true,
+			},
 			skipOnWindows: true, // permission issues
 			expectedErr: testutil.TestError{
 				DefaultError: status.Errorf(codes.Internal, fmt.Sprintf("could not mount \"%s\" at \"%s\": "+
@@ -891,21 +921,25 @@ func TestNodePublishVolume(t *testing.T) {
 		},
 		{
 			desc: "[Success] Valid request already mounted",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
 				VolumeId:          "vol_1",
 				TargetPath:        alreadyMountedTarget,
 				StagingTargetPath: sourceTest,
-				Readonly:          true},
+				Readonly:          true,
+			},
 			skipOnWindows: true, // permission issues
 			expectedErr:   testutil.TestError{},
 		},
 		{
 			desc: "[Success] Valid request",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
+			req: csi.NodePublishVolumeRequest{
+				VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
 				VolumeId:          "vol_1",
 				TargetPath:        targetTest,
 				StagingTargetPath: sourceTest,
-				Readonly:          true},
+				Readonly:          true,
+			},
 			skipOnWindows: true, // permission issues
 			expectedErr:   testutil.TestError{},
 		},
@@ -1033,10 +1067,6 @@ func TestNodeExpandVolume(t *testing.T) {
 		DefaultError: status.Error(codes.NotFound, "failed to determine device path for volumePath [./test]: path \"./test\" does not exist"),
 	}
 
-	devicePathErr := testutil.TestError{
-		DefaultError: status.Errorf(codes.NotFound, "could not determine device path(%s), error: %v", targetTest, notFoundErr),
-		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
-	}
 	blockSizeErr := testutil.TestError{
 		DefaultError: status.Error(codes.Internal, "could not get size of block volume at path test: error when getting size of block volume at path test: output: , err: exit status 1"),
 		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
@@ -1052,9 +1082,6 @@ func TestNodeExpandVolume(t *testing.T) {
 
 	notFoundErrAction := func() ([]byte, []byte, error) {
 		return []byte{}, []byte{}, notFoundErr
-	}
-	findmntAction := func() ([]byte, []byte, error) {
-		return []byte("test"), []byte{}, nil
 	}
 	blkidAction := func() ([]byte, []byte, error) {
 		return []byte("DEVICE=test\nTYPE=ext4"), []byte{}, nil
@@ -1108,17 +1135,6 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 		},
 		{
-			desc: "Invalid device path",
-			req: csi.NodeExpandVolumeRequest{
-				CapacityRange:     stdCapacityRange,
-				VolumePath:        targetTest,
-				VolumeId:          "test",
-				StagingTargetPath: "",
-			},
-			expectedErr:   devicePathErr,
-			outputScripts: []testingexec.FakeAction{notFoundErrAction},
-		},
-		{
 			desc: "No block size at path",
 			req: csi.NodeExpandVolumeRequest{
 				CapacityRange:     stdCapacityRange,
@@ -1128,7 +1144,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   blockSizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, notFoundErrAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, notFoundErrAction},
 		},
 		{
 			desc: "Resize failure",
@@ -1140,7 +1156,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   resizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsFailedAction, blockdevSizeTooSmallAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsFailedAction},
 		},
 		{
 			desc: "Resize too small failure",
@@ -1152,7 +1168,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   sizeTooSmallErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, blockdevSizeTooSmallAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, blockdevSizeTooSmallAction},
 		},
 		{
 			desc: "Successfully expanded",
@@ -1164,7 +1180,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			skipOnWindows: true,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, blockdevAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, blockdevAction},
 		},
 		{
 			desc: "Block volume expansion",
@@ -1203,6 +1219,8 @@ func TestNodeExpandVolume(t *testing.T) {
 		if runtime.GOOS != "windows" {
 			d.setNextCommandOutputScripts(test.outputScripts...)
 		}
+
+		d.setDiskDeviceName("test")
 
 		_, err := d.NodeExpandVolume(context.Background(), &test.req)
 		if !testutil.AssertError(&test.expectedErr, err) {
@@ -1261,7 +1279,7 @@ func TestGetBlockSizeBytes(t *testing.T) {
 			t.Errorf("desc: %s\n actualErr: (%v), expectedErr: (%v)", test.desc, err, test.expectedErr.Error())
 		}
 	}
-	//Setup
+	// Setup
 	_ = makeDir(testTarget)
 
 	err = os.RemoveAll(testTarget)
@@ -1311,7 +1329,7 @@ func TestEnsureBlockTargetFile(t *testing.T) {
 }
 
 func makeDir(pathname string) error {
-	err := os.MkdirAll(pathname, os.FileMode(0755))
+	err := os.MkdirAll(pathname, os.FileMode(0o755))
 	if err != nil {
 		if !os.IsExist(err) {
 			return err
@@ -1321,11 +1339,11 @@ func makeDir(pathname string) error {
 }
 
 func TestMakeDir(t *testing.T) {
-	//Successfully create directory
+	// Successfully create directory
 	err := makeDir(targetTest)
 	assert.NoError(t, err)
 
-	//Failed case
+	// Failed case
 	err = makeDir("./azuredisk.go")
 	var e *os.PathError
 	if !errors.As(err, &e) {
@@ -1413,11 +1431,13 @@ func TestNodePublishVolumeIdempotentMount(t *testing.T) {
 	d, _ := NewFakeDriver(t)
 
 	volumeCap := csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER}
-	req := csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
+	req := csi.NodePublishVolumeRequest{
+		VolumeCapability:  &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCap},
 		VolumeId:          "vol_1",
 		TargetPath:        targetTest,
 		StagingTargetPath: sourceTest,
-		Readonly:          true}
+		Readonly:          true,
+	}
 
 	_, err := d.NodePublishVolume(context.Background(), &req)
 	assert.NoError(t, err)

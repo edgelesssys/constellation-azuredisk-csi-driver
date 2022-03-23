@@ -1,4 +1,22 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
 Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +49,7 @@ import (
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/edgelesssys/constellation/mount/cryptmapper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -62,6 +81,11 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	diskURI := req.GetVolumeId()
 	if len(diskURI) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
+	}
+
+	diskName, err := d.getVolumeName(diskURI)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 	}
 
 	target := req.GetStagingTargetPath()
@@ -117,18 +141,12 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		}
 	}
 
-	// If the access type is block, do nothing for stage
-	switch req.GetVolumeCapability().GetAccessType().(type) {
-	case *csi.VolumeCapability_Block:
-		return &csi.NodeStageVolumeResponse{}, nil
-	}
-
 	mnt, err := d.ensureMountPoint(target)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not mount target %q: %v", target, err)
 	}
 	if mnt {
-		klog.V(2).Infof("NodeStageVolume: already mounted on target %s", target)
+		klog.V(2).Infof("NodeStageVolume: already mounted on target %s", target) // if volume is already mounted, we also already opened the crypt device
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
@@ -153,19 +171,36 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		source = source + "-part" + partition
 	}
 
-	// FormatAndMount will format only if needed
-	klog.V(2).Infof("NodeStageVolume: formatting %s and mounting at %s with mount options(%s)", source, target, options)
-	if err := d.formatAndMount(source, target, fstype, options); err != nil {
-		return nil, status.Errorf(codes.Internal, "could not format %s(lun: %s), and mount it at %s, failed with %v", source, lun, target, err)
+	// [Edgeless] Map the device as a crypt device, creating a new LUKS partition if needed
+	fstype, integrity := cryptmapper.IsIntegrityFS(fstype)
+	devicePathReal, err := d.evalSymLinks(source)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
 	}
-	klog.V(2).Infof("NodeStageVolume: format %s and mounting at %s successfully.", source, target)
+	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, integrity)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
+	}
+
+	if blk := volumeCapability.GetBlock(); blk != nil {
+		// Noop for Block NodeStageVolume
+		klog.V(4).Infof("NodeStageVolume succeeded on %s to %s, capability is block so this is a no-op", diskURI, target)
+		return &csi.NodeStageVolumeResponse{}, nil
+	}
+
+	// FormatAndMount will format only if needed
+	klog.V(2).Infof("NodeStageVolume: formatting %s and mounting at %s with mount options(%s)", devicePath, target, options)
+	if err := d.formatAndMount(devicePath, target, fstype, options); err != nil {
+		return nil, status.Errorf(codes.Internal, "could not format %s(lun: %s), and mount it at %s, failed with %v", devicePath, lun, target, err)
+	}
+	klog.V(2).Infof("NodeStageVolume: format %s and mounting at %s successfully.", devicePath, target)
 
 	var needResize bool
 	if required, ok := req.GetVolumeContext()[consts.ResizeRequired]; ok && strings.EqualFold(required, consts.TrueValue) {
 		needResize = true
 	}
 	if !needResize {
-		if needResize, err = needResizeVolume(source, target, d.mounter); err != nil {
+		if needResize, err = needResizeVolume(devicePath, target, d.mounter); err != nil {
 			klog.Errorf("NodeStageVolume: could not determine if volume %s needs to be resized: %v", diskURI, err)
 		}
 	}
@@ -173,8 +208,8 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	// if resize is required, resize filesystem
 	if needResize {
 		klog.V(2).Infof("NodeStageVolume: fs resize initiating on target(%s) volumeid(%s)", target, diskURI)
-		if err := resizeVolume(source, target, d.mounter); err != nil {
-			return nil, status.Errorf(codes.Internal, "NodeStageVolume: could not resize volume %s (%s):  %v", source, target, err)
+		if err := resizeVolume(devicePath, target, d.mounter); err != nil {
+			return nil, status.Errorf(codes.Internal, "NodeStageVolume: could not resize volume %s (%s):  %v", devicePath, target, err)
 		}
 		klog.V(2).Infof("NodeStageVolume: fs resize successful on target(%s) volumeid(%s).", target, diskURI)
 	}
@@ -186,6 +221,10 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
+	}
+	diskName, err := d.getVolumeName(volumeID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 	}
 
 	stagingTargetPath := req.GetStagingTargetPath()
@@ -199,10 +238,16 @@ func (d *Driver) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolu
 	defer d.volumeLocks.Release(volumeID)
 
 	klog.V(2).Infof("NodeUnstageVolume: unmounting %s", stagingTargetPath)
-	err := CleanupMountPoint(stagingTargetPath, d.mounter, true /*extensiveMountPointCheck*/)
+	err = CleanupMountPoint(stagingTargetPath, d.mounter, true /*extensiveMountPointCheck*/)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to unmount staging target %q: %v", stagingTargetPath, err)
 	}
+
+	// [Edgeless] Unmap the crypt device so we can properly remove the device from the node
+	if err := d.cryptMapper.CloseCryptDevice(diskName); err != nil {
+		return nil, status.Errorf(codes.Internal, "NodeUnstageVolume failed to close mapped crypt device for disk %s: %v", stagingTargetPath, err)
+	}
+
 	klog.V(2).Infof("NodeUnstageVolume: unmount %s successfully", stagingTargetPath)
 
 	return &csi.NodeUnstageVolumeResponse{}, nil
@@ -252,17 +297,18 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 
 	switch req.GetVolumeCapability().GetAccessType().(type) {
 	case *csi.VolumeCapability_Block:
-		lun, ok := req.PublishContext[consts.LUN]
-		if !ok {
-			return nil, status.Error(codes.InvalidArgument, "lun not provided")
-		}
-		var err error
-		source, err = d.getDevicePathWithLUN(lun)
+		diskName, err := d.getVolumeName(volumeID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find device path with lun %s. %v", lun, err)
+			return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 		}
-		klog.V(2).Infof("NodePublishVolume [block]: found device path %s with lun %s", source, lun)
-		if err = d.ensureBlockTargetFile(target); err != nil {
+		source, err = d.evalSymLinks(filepath.Join("/dev/mapper", diskName))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "NodePublishVolume: can not evaluate source path: %v", err)
+		}
+
+		klog.V(2).Infof("NodePublishVolume [block]: found device path %s", source)
+		err = d.ensureBlockTargetFile(target)
+		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 	case *csi.VolumeCapability_Mount:
@@ -433,8 +479,13 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
 	}
+	diskName, err := d.getVolumeName(volumeID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
+	}
+
 	capacityBytes := req.GetCapacityRange().GetRequiredBytes()
-	volSizeBytes := int64(capacityBytes)
+	volSizeBytes := int64(capacityBytes - cryptmapper.LUKSHeaderSize) // LUKS2 header is 16MiB, subtract from request size to get expected value)
 	requestGiB := volumehelper.RoundUpGiB(volSizeBytes)
 
 	volumePath := req.GetVolumePath()
@@ -453,6 +504,12 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 		}
 	}
 
+	// [Edgeless] need to acquire lock before resizing block device LUKS partition
+	if acquired := d.volumeLocks.TryAcquire(volumeID); !acquired {
+		return nil, status.Errorf(codes.Aborted, volumeOperationAlreadyExistsFmt, volumeID)
+	}
+	defer d.volumeLocks.Release(volumeID)
+
 	if isBlock {
 		if d.enableDiskOnlineResize {
 			klog.V(2).Info("NodeExpandVolume begin to rescan all devices on block volume(%s)", volumeID)
@@ -460,25 +517,30 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 				klog.Errorf("NodeExpandVolume rescanAllVolumes failed with error: %v", err)
 			}
 		}
+		// [Edgeless] Resize LUKS partition
+		if _, err := d.cryptMapper.ResizeCryptDevice(ctx, diskName); err != nil {
+			return nil, status.Errorf(codes.Internal, "resizing crypt device: %v", err)
+		}
 		klog.V(2).Info("NodeExpandVolume skip resize operation on block volume(%s)", volumeID)
 		return &csi.NodeExpandVolumeResponse{}, nil
 	}
 
-	if acquired := d.volumeLocks.TryAcquire(volumeID); !acquired {
-		return nil, status.Errorf(codes.Aborted, volumeOperationAlreadyExistsFmt, volumeID)
-	}
-	defer d.volumeLocks.Release(volumeID)
-
-	devicePath, err := getDevicePathWithMountPath(volumePath, d.mounter)
+	devicePath, err := d.cryptMapper.GetDevicePath(diskName)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
 
 	if d.enableDiskOnlineResize {
-		klog.V(2).Info("NodeExpandVolume begin to rescan device %s on volume(%s)", devicePath, volumeID)
+		klog.V(2).Infof("NodeExpandVolume begin to rescan device %s on volume(%s)", devicePath, volumeID)
 		if err := rescanVolume(d.ioHandler, devicePath); err != nil {
 			klog.Errorf("NodeExpandVolume rescanVolume failed with error: %v", err)
 		}
+	}
+
+	// [Edgeless] Resize LUKS partition
+	devicePath, err = d.cryptMapper.ResizeCryptDevice(ctx, diskName)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "resizing crypt device: %v", err)
 	}
 
 	var retErr error

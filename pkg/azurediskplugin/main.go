@@ -1,4 +1,22 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
 Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +55,7 @@ func init() {
 }
 
 var (
+	kmsAddr                      = flag.String("kms-addr", "kms-service.kube-system:9000", "Address of Constellation's KMS. Used to request keys (default: kms.kube-system:9000")
 	endpoint                     = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	nodeID                       = flag.String("nodeid", "", "node id")
 	version                      = flag.Bool("version", false, "Print the version and exit.")
@@ -113,6 +132,7 @@ func handle() {
 		AttachDetachInitialDelayInMs: *attachDetachInitialDelayInMs,
 		VMSSCacheTTLInSeconds:        *vmssCacheTTLInSeconds,
 		VMType:                       *vmType,
+		KMSAddr:                      *kmsAddr,
 	}
 	driver := azuredisk.NewDriver(&driverOptions)
 	if driver == nil {

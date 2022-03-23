@@ -1,73 +1,38 @@
-# Azure Disk CSI driver for Kubernetes
+# Azure Disk CSI driver for Constellation Kubernetes
 
-[![Travis](https://travis-ci.org/kubernetes-sigs/azuredisk-csi-driver.svg)](https://travis-ci.org/kubernetes-sigs/azuredisk-csi-driver)
-[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/azuredisk-csi-driver/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-sigs/azuredisk-csi-driver?branch=master)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fkubernetes-sigs%2Fazuredisk-csi-driver.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fkubernetes-sigs%2Fazuredisk-csi-driver?ref=badge_shield)
+This is a fork of the Azure CSI driver with added encryption features for Constellation.
 
-### About
-This driver allows Kubernetes to access [Azure Disk](https://azure.microsoft.com/en-us/services/storage/disks/) volume, csi plugin name: `disk.csi.azure.com`
+- [Upstream source](https://github.com/kubernetes-sigs/azuredisk-csi-driver)
+- [Constellation repo](https://github.com/edgelesssys/constellation)
 
-Disclaimer: Deploying this driver manually is not an officially supported Microsoft product. For a fully managed and supported experience on Kubernetes, use [AKS with the managed Azure disk csi driver](https://learn.microsoft.com/en-us/azure/aks/azure-disk-csi).
+## About
 
-### Project status
-
-V1: GA
-
-V2: Preview
-
-### Container Images & Kubernetes Compatibility
-
-#### V1
-
-|Driver Version  |Image                                                      | supported k8s version |
-|----------------|-----------------------------------------------------------|-----------------------|
-|`master` branch |mcr.microsoft.com/k8s/csi/azuredisk-csi:latest             | 1.21+                 |
-|v1.27.1         |mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:v1.27.1 | 1.21+                 |
-|v1.26.2         |mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:v1.26.2 | 1.21+                 |
-|v1.25.0         |mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:v1.25.0 | 1.21+                 |
-
-#### V2
-
-|Driver Version  |Image                                                            | supported k8s version |
-|----------------|-----------------------------------------------------------------|-----------------------|
-|`main_v2` branch|                                                                 | 1.21+                 |
-|v2.0.0-beta.6   |mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:v2.0.0-beta.6 | 1.21+                 |
+This driver allows a Constellation cluster to use [Azure Disk](https://azure.microsoft.com/en-us/services/storage/disks/) volume, csi plugin name: `azuredisk.csi.confidential.cloud`
 
 ### Driver parameters
 
-Please refer to [`disk.csi.azure.com` driver parameters](./docs/driver-parameters.md)
-> storage class `disk.csi.azure.com` parameters are compatible with built-in [azuredisk](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) plugin
+Please refer to [`azuredisk.csi.confidential.cloud` driver parameters](./docs/driver-parameters.md)
 
-### Prerequisite
+### Install driver on a Constellation Kubernetes cluster
 
-- The driver depends on [cloud provider config file](https://github.com/kubernetes/cloud-provider-azure/blob/master/docs/cloud-provider-config.md) (here is [config example](./deploy/example/azure.json)), config file path on different platforms:
-   - [AKS](https://docs.microsoft.com/en-us/azure/aks/), [capz](https://github.com/kubernetes-sigs/cluster-api-provider-azure), [aks-engine](https://github.com/Azure/aks-engine): `/etc/kubernetes/azure.json`
-   - [Azure RedHat OpenShift](https://docs.openshift.com/container-platform/4.11/storage/container_storage_interface/persistent-storage-csi-azure.html): `/etc/kubernetes/cloud.conf`
- - <details> <summary>specify a different config file path via configmap</summary></br>create configmap "azure-cred-file" before driver starts up</br><pre>kubectl create configmap azure-cred-file --from-literal=path="/etc/kubernetes/cloud.conf" --from-literal=path-windows="C:\\k\\cloud.conf" -n kube-system</pre></details>
-- <details> <summary>edge zone support in cloud provider config</summary></br>`extendedLocationType` and `extendedLocationName` should be added into cloud provider config file, available values of `extendedLocationName` are `attatlanta1`, `attdallas1`, `attnewyork1`, `attdetroit1`</br><pre>```"extendedLocationType": "edgezone","extendedLocationName": "attatlanta1",```</pre></details>
- - Cloud provider config can also be specified via kubernetes secret, check details [here](./docs/read-from-secret.md)
- - Make sure identity used by driver has `Contributor` role on node resource group
-   - When install open source driver on the cluster, ensure agentpool service principal or managed service identity is assigned to the `Contributor` role on the resource group used to store managed disks.
+Use `helm` to deploy the driver to your cluster:
 
-### Install driver on a Kubernetes cluster
- - install by [helm charts](./charts)
- - install by [kubectl](./docs/install-azuredisk-csi-driver.md)
- - install open source CSI driver on following platforms:
-    - [AKS](./docs/install-driver-on-aks.md)
-    - [Azure RedHat OpenShift](https://github.com/ezYakaEagle442/aro-pub-storage/blob/master/setup-store-CSI-driver-azure-disk.md)
- - install managed CSI driver on following platforms:
-   - [AKS](https://learn.microsoft.com/en-us/azure/aks/csi-storage-drivers)
-   - [Azure RedHat OpenShift](https://docs.openshift.com/container-platform/4.11/storage/container_storage_interface/persistent-storage-csi-azure.html)
+```shell
+helm install azuredisk-csi-driver charts/edgeless/latest/azuredisk-csi-driver.tgz \
+    --namespace kube-system \
+    --set linux.distro=fedora \
+    --set controller.replicas=1
+```
 
-### Install Azure Disk CSI Driver V2 on a Kubernetes cluster (Preview)
+See [helm configuration](../charts/README.md#V1-Parameters) for a detailed list on configuration options.
 
-- install via [helm charts](./charts)
+Remove the driver using helm:
 
-### Examples
+```shell
+helm uninstall azuredisk-csi-driver -n kube-system
+```
 
-- [Basic usage](./deploy/example/e2e_usage.md)
-
-### Features
+## Features
 
 - [Topology (Availability Zone)](./deploy/example/topology)
   - [ZRS disk support](./deploy/example/topology#zrs-disk-support)
@@ -75,26 +40,45 @@ Please refer to [`disk.csi.azure.com` driver parameters](./docs/driver-parameter
 - [Volume Cloning](./deploy/example/cloning)
 - [Volume Expansion](./deploy/example/resize)
 - [Raw Block Volume](./deploy/example/rawblock)
-- [Windows](./deploy/example/windows)
-- [Shared Disk](./deploy/example/sharedisk)
 - [Volume Limits](./deploy/example/volumelimits)
 - [fsGroupPolicy](./deploy/example/fsgroup)
-- [Advanced disk performance tuning (Preview)](./docs/perf-profiles.md)
+- [Tune disk performance on Linux](./docs/perf-profiles.md)
+- Transparent disk encryption at node level
+- Disk integrity protection
 
-#### New in V2
+### Enabling integrity protection
 
-- [Attachments Replicas for Faster Pod Failover (Preview)](./docs/design-v2.md)
-  - See [pod failover demo](./deploy/example/failover/README.md) for example configuration.
+By default the CSI driver will transparently encrypt all disks staged on the node.
+Optionally, you can configure the driver to also apply integrity protection.
 
-### Troubleshooting
+Please note that enabling integrity protection requires wiping the disk before use.
+Disk wipe speeds are largely dependent on IOPS and the performance tier of the disk.
+If you intend to provision large amounts of storage and Pod creation speed is important,
+we recommend requesting high-performance disks.
+
+To enable integrity protection, create a storage class with an explicit file system type request and add the suffix `-integrity`.
+The following is a storage class for integrity protected `ext4` formatted disks:
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: integrity-protected
+provisioner: azuredisk.csi.confidential.cloud
+parameters:
+  skuName: StandardSSD_LRS
+  csi.storage.k8s.io/fstype: ext4-integrity
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+```
+
+Please note that [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) is not supported for integrity-protected disks.
+
+## Troubleshooting
 
 - [CSI driver troubleshooting guide](./docs/csi-debug.md)
 
-### Support
-
-- Please see our [support policy][support-policy]
-
-### Limitations
+## Limitations
 
 - Please refer to [Azure Disk CSI Driver Limitations](./docs/limitations.md)
 
@@ -102,13 +86,19 @@ Please refer to [`disk.csi.azure.com` driver parameters](./docs/driver-parameter
 
 - Please refer to [development guide](./docs/csi-dev.md)
 
-### View CI Results
+To build the driver container image:
 
-- Check testgrid [provider-azure-azuredisk-csi-driver](https://testgrid.k8s.io/provider-azure-azuredisk-csi-driver) dashboard.
+```shell
+driver_version=v0.0.0-test
+make REGISTRY=ghcr.io/edgelesssys IMAGE_NAME=constellation/azure-csi-driver IMAGE_VERSION=${driver_version} container
+docker push ghcr.io/edgelesssys/constellation/azure-csi-driver:${driver_version}
+```
 
-### Links
+## Links
 
 - [Kubernetes CSI Documentation](https://kubernetes-csi.github.io/docs/)
 - [Container Storage Interface (CSI) Specification](https://github.com/container-storage-interface/spec)
 
-[support-policy]: support.md
+## License
+
+This project is licensed under the [AGPLv3](LICENSE). It's based on code licensed under the [Apache 2.0 license](LICENSE.Apache).

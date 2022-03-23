@@ -10,7 +10,7 @@ apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: csi-azuredisk-vsc
-driver: disk.csi.azure.com
+driver: azuredisk.csi.confidential.cloud
 deletionPolicy: Delete
 parameters:
   resourceGroup: EXISTING_RESOURCE_GROUP_NAME  # optional, only set this when snapshot is not taken in the same resource group as agent node
