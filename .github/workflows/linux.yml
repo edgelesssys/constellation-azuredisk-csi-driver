@@ -1,7 +1,10 @@
 name: Linux Build & Unit Tests
 on:
-    pull_request: {}
-    push: {}
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
 jobs:
   build:
     name: Build

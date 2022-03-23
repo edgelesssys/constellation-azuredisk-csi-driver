@@ -1,5 +1,6 @@
 name: Trivy vulnerability scanner
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -35,4 +36,3 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
-

@@ -1,0 +1,30 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-example
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: encrypted-storage
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server
+  namespace: default
+spec:
+  containers:
+  - name: web-server
+    image: nginx
+    volumeMounts:
+    - mountPath: /var/lib/www/html
+      name: mypvc
+  volumes:
+  - name: mypvc
+    persistentVolumeClaim:
+      claimName: pvc-example
+      readOnly: false
