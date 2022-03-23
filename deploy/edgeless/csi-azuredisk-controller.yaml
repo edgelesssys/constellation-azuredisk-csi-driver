@@ -170,8 +170,6 @@ spec:
           volumeMounts:
             - mountPath: /csi
               name: socket-dir
-            - mountPath: /etc/kubernetes/
-              name: azure-cred
           resources:
             limits:
               cpu: 1
@@ -182,7 +180,3 @@ spec:
       volumes:
         - name: socket-dir
           emptyDir: {}
-        - name: azure-cred
-          hostPath:
-            path: /etc/kubernetes/
-            type: DirectoryOrCreate

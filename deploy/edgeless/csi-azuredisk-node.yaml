@@ -133,8 +133,6 @@ spec:
             - mountPath: /var/lib/kubelet/
               mountPropagation: Bidirectional
               name: mountpoint-dir
-            - mountPath: /etc/kubernetes/
-              name: azure-cred
             - mountPath: /dev
               name: device-dir
             - mountPath: /sys/bus/scsi/devices
@@ -161,10 +159,6 @@ spec:
             path: /var/lib/kubelet/plugins_registry/
             type: DirectoryOrCreate
           name: registration-dir
-        - hostPath:
-            path: /etc/kubernetes/
-            type: DirectoryOrCreate
-          name: azure-cred
         - hostPath:
             path: /dev
             type: Directory
