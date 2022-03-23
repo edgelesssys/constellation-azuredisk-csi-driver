@@ -1,5 +1,10 @@
 /*
 Copyright 2021 The Kubernetes Authors.
+Copyright Edgeless Systems GmbH
+
+NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+Changes are needed to enable the use of dm-crypt.
+The original copyright notice is kept below.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +31,7 @@ const (
 	DefaultAzureCredentialFileEnv = "AZURE_CREDENTIAL_FILE"
 	DefaultCredFilePathLinux      = "/etc/kubernetes/azure.json"
 	DefaultCredFilePathWindows    = "C:\\k\\azure.json"
-	DefaultDriverName             = "disk.csi.azure.com"
+	DefaultDriverName             = "azuredisk.csi.confidential.cloud"
 	DesIDField                    = "diskencryptionsetid"
 	DiskEncryptionTypeField       = "diskencryptiontype"
 	DiskAccessIDField             = "diskaccessid"

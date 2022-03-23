@@ -17,7 +17,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: managed-csi
-provisioner: disk.csi.azure.com
+provisioner: azuredisk.csi.confidential.cloud
 allowVolumeExpansion: true
 parameters:
   skuName: StandardSSD_LRS
@@ -52,7 +52,7 @@ kubectl patch pvc persistent-storage-statefulset-azuredisk-0 --type merge --patc
 ```console
 $ kubectl get pvc persistent-storage-statefulset-azuredisk-0
 NAME                                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS
-persistent-storage-statefulset-azuredisk-0   Bound    pvc-84903bd6-f4da-44f3-b3f7-9b8b59f55b6b   15Gi       RWO            disk.csi.azure.com
+persistent-storage-statefulset-azuredisk-0   Bound    pvc-84903bd6-f4da-44f3-b3f7-9b8b59f55b6b   15Gi       RWO            azuredisk.csi.confidential.cloud
 ```
 
 5. verify the filesystem size.
@@ -69,15 +69,15 @@ Filesystem      Size  Used Avail Use% Mounted on
 ```console
 $ kubectl get describe persistent-storage-statefulset-azuredisk-0
 Events:
-  Type     Reason                      Age                   From                                                                                       Message
-  ----     ------                      ----                  ----                                                                                       -------
-  Normal   WaitForFirstConsumer        35m (x2 over 35m)     persistentvolume-controller                                                                waiting for first consumer to be created before binding
-  Normal   ExternalProvisioning        35m                   persistentvolume-controller                                                                waiting for a volume to be created, either by external provisioner "disk.csi.azure.com" or manually created by system administrator
-  Normal   Provisioning                35m                   disk.csi.azure.com_aks-agentpool-32806483-vmss000001_010c423f-e720-4b9f-89fa-07b246c920cb  External provisioner is provisioning volume for claim "default/persistent-storage-statefulset-azuredisk-0"
-  Normal   ProvisioningSucceeded       35m                   disk.csi.azure.com_aks-agentpool-32806483-vmss000001_010c423f-e720-4b9f-89fa-07b246c920cb  Successfully provisioned volume pvc-65a8b677-4490-4066-9446-c4067188acab
-  Warning  ExternalExpanding           77s (x3 over 33m)     volume_expand                                                                              Ignoring the PVC: didn't find a plugin capable of expanding the volume; waiting for an external controller to process this PVC.
-  Normal   Resizing                    77s                   external-resizer disk.csi.azure.com                                                        External resizer is resizing volume pvc-65a8b677-4490-4066-9446-c4067188acab
-  Normal   FileSystemResizeRequired    44s                   external-resizer disk.csi.azure.com                                                        Require file system resize of volume on node
+  Type     Reason                      Age                   From                                                                                                     Message
+  ----     ------                      ----                  ----                                                                                                     -------
+  Normal   WaitForFirstConsumer        35m (x2 over 35m)     persistentvolume-controller                                                                              waiting for first consumer to be created before binding
+  Normal   ExternalProvisioning        35m                   persistentvolume-controller                                                                              waiting for a volume to be created, either by external provisioner "azuredisk.csi.confidential.cloud" or manually created by system administrator
+  Normal   Provisioning                35m                   azuredisk.csi.confidential.cloud_aks-agentpool-32806483-vmss000001_010c423f-e720-4b9f-89fa-07b246c920cb  External provisioner is provisioning volume for claim "default/persistent-storage-statefulset-azuredisk-0"
+  Normal   ProvisioningSucceeded       35m                   azuredisk.csi.confidential.cloud_aks-agentpool-32806483-vmss000001_010c423f-e720-4b9f-89fa-07b246c920cb  Successfully provisioned volume pvc-65a8b677-4490-4066-9446-c4067188acab
+  Warning  ExternalExpanding           77s (x3 over 33m)     volume_expand                                                                                            Ignoring the PVC: didn't find a plugin capable of expanding the volume; waiting for an external controller to process this PVC.
+  Normal   Resizing                    77s                   external-resizer azuredisk.csi.confidential.cloud                                                        External resizer is resizing volume pvc-65a8b677-4490-4066-9446-c4067188acab
+  Normal   FileSystemResizeRequired    44s                   external-resizer azuredisk.csi.confidential.cloud                                                        Require file system resize of volume on node
   Normal   FileSystemResizeSuccessful  6s (x3 over 29m)      kubelet                                                                                    MountVolume.NodeExpandVolume succeeded for volume "pvc-65a8b677-4490-4066-9446-c4067188acab"
 ```
 
