@@ -16,10 +16,10 @@ spec:
   drivers:
   - allocatable:
       count: 8
-    name: disk.csi.azure.com
+    name: azuredisk.csi.confidential.cloud
     nodeID: aks-nodepool1-75219208-0
     topologyKeys:
-    - topology.disk.csi.azure.com/zone
+    - topology.azuredisk.csi.confidential.cloud/zone
 ```
 
 ### Troubleshooting `max_volumes_per_node` setting

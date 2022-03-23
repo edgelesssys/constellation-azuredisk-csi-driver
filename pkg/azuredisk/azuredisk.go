@@ -1,4 +1,22 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
 Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +37,7 @@ package azuredisk
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -26,6 +45,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
+
+	"github.com/edgelesssys/constellation/mount/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/mount/kms"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -41,6 +63,7 @@ import (
 	csicommon "sigs.k8s.io/azuredisk-csi-driver/pkg/csi-common"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/mounter"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
+	"sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 	azurecloudconsts "sigs.k8s.io/cloud-provider-azure/pkg/consts"
@@ -75,6 +98,7 @@ type DriverOptions struct {
 	EnableWindowsHostProcess     bool
 	GetNodeIDFromIMDS            bool
 	EnableOtelTracing            bool
+	KMSAddr                      string
 }
 
 // CSIDriver defines the interface for a CSI driver.
@@ -88,6 +112,13 @@ type CSIDriver interface {
 
 type hostUtil interface {
 	PathIsDevice(string) (bool, error)
+}
+
+type cryptMapper interface {
+	CloseCryptDevice(volumeID string) error
+	OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error)
+	ResizeCryptDevice(ctx context.Context, volumeID string) (string, error)
+	GetDevicePath(volumeID string) (string, error)
 }
 
 // DriverCore contains fields common to both the V1 and V2 driver, and implements all interfaces of CSI drivers
@@ -123,6 +154,9 @@ type DriverCore struct {
 	enableWindowsHostProcess     bool
 	getNodeIDFromIMDS            bool
 	enableOtelTracing            bool
+	getVolumeName                func(string) (string, error)
+	evalSymLinks                 func(string) (string, error)
+	cryptMapper                  cryptMapper
 }
 
 // Driver is the v1 implementation of the Azure Disk CSI Driver.
@@ -167,6 +201,14 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.volumeLocks = volumehelper.NewVolumeLocks()
 	driver.ioHandler = azureutils.NewOSIOHandler()
 	driver.hostUtil = hostutil.NewHostUtil()
+
+	// [Edgeless] set up dm-crypt
+	driver.evalSymLinks = filepath.EvalSymlinks
+	driver.getVolumeName = util.GetVolumeName
+	driver.cryptMapper = cryptmapper.New(
+		cryptKms.NewConstellationKMS(options.KMSAddr),
+		&cryptmapper.CryptDevice{},
+	)
 
 	topologyKey = fmt.Sprintf("topology.%s/zone", driver.Name)
 
@@ -255,7 +297,6 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
-		csi.ControllerServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
 	}
 	if d.enableListVolumes {
 		controllerCap = append(controllerCap, csi.ControllerServiceCapability_RPC_LIST_VOLUMES, csi.ControllerServiceCapability_RPC_LIST_VOLUMES_PUBLISHED_NODES)
@@ -270,13 +311,11 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 			csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
 			csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY,
 			csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER,
-			csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER,
 		})
 	d.AddNodeServiceCapabilities([]csi.NodeServiceCapability_RPC_Type{
 		csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
 		csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
 		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
-		csi.NodeServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
 	})
 
 	s := csicommon.NewNonBlockingGRPCServer()
