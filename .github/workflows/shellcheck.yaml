@@ -1,16 +1,10 @@
 name: ShellCheck
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - v*
     branches:
       - master
-      - release-*
   pull_request:
-    branches:
-      - master
-      - release-*
-
 jobs:
   shellcheck:
     name: Shellcheck
