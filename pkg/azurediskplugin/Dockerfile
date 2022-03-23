@@ -1,4 +1,9 @@
 # Copyright 2019 The Kubernetes Authors.
+# Copyright Edgeless Systems GmbH
+#
+# NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+# Changes are needed to enable the use of dm-crypt.
+# The original copyright notice is kept below.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +19,9 @@
 
 FROM registry.k8s.io/build-image/debian-base:bullseye-v1.4.0
 
-RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs
+RUN apt update && apt upgrade -y && apt-mark unhold libcap2 && clean-install util-linux e2fsprogs mount ca-certificates udev xfsprogs btrfs-progs libcryptsetup-dev
 
-LABEL maintainers="andyzhangx"
-LABEL description="Azure Disk CSI Driver"
+LABEL description="Azure Disk CSI Driver [Edgeless Fork]"
 
 ARG ARCH=amd64
 ARG PLUGIN_NAME=azurediskplugin

@@ -1,5 +1,10 @@
 /*
 Copyright 2017 The Kubernetes Authors.
+Copyright Edgeless Systems GmbH
+
+NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+Changes are needed to enable the use of dm-crypt.
+The original copyright notice is kept below.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,6 +42,7 @@ func init() {
 }
 
 var (
+	kmsAddr                    = flag.String("kms-addr", "kms.kube-system:9000", "Address of Constellation's KMS. Used to request keys (default: kms.kube-system:9000")
 	endpoint                   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	nodeID                     = flag.String("nodeid", "", "node id")
 	version                    = flag.Bool("version", false, "Print the version and exit.")
@@ -105,6 +111,7 @@ func handle() {
 		EnableDiskCapacityCheck:    *enableDiskCapacityCheck,
 		VMSSCacheTTLInSeconds:      *vmssCacheTTLInSeconds,
 		VMType:                     *vmType,
+		KMSAddr:                    *kmsAddr,
 	}
 	driver := azuredisk.NewDriver(&driverOptions)
 	if driver == nil {

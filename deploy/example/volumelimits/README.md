@@ -15,10 +15,10 @@ spec:
   drivers:
   - allocatable:
       count: 8
-    name: disk.csi.azure.com
+    name: azuredisk.csi.confidential.cloud
     nodeID: aks-nodepool1-75219208-0
     topologyKeys:
-    - topology.disk.csi.azure.com/zone
+    - topology.azuredisk.csi.confidential.cloud/zone
 ```
 
 ### Troubleshooting `max_volumes_per_node` setting
@@ -33,5 +33,5 @@ I0829 02:13:15.165405       1 utils.go:108] GRPC call: /csi.v1.Node/NodeGetInfo
 I0829 02:13:15.165427       1 utils.go:109] GRPC request: {}
 I0829 02:13:15.170350       1 azure_zones.go:76] Availability zone is not enabled for the node, falling back to fault domain
 I0829 02:13:15.170378       1 nodeserver.go:281] got a matching size in getMaxDataDiskCount, VM Size: STANDARD_DS2_V2, MaxDataDiskCount: 8
-I0829 02:13:15.170386       1 utils.go:114] GRPC response: {"accessible_topology":{"segments":{"topology.disk.csi.azure.com/zone":""}},"max_volumes_per_node":8,"node_id":"aks-nodepool1-75219208-1"}
+I0829 02:13:15.170386       1 utils.go:114] GRPC response: {"accessible_topology":{"segments":{"topology.azuredisk.csi.confidential.cloud/zone":""}},"max_volumes_per_node":8,"node_id":"aks-nodepool1-75219208-1"}
 ```
