@@ -60,6 +60,9 @@ type DriverOptions struct {
 	Kubeconfig                   string
 	Endpoint                     string
 	DisableAVSetNodes            bool
+
+	// [Edgeless] Constellation options
+	KMSAddr                      string
 }
 
 func (o *DriverOptions) AddFlags() *flag.FlagSet {
@@ -101,6 +104,8 @@ func (o *DriverOptions) AddFlags() *flag.FlagSet {
 	fs.StringVar(&o.Kubeconfig, "kubeconfig", "", "Absolute path to the kubeconfig file. Required only when running out of cluster.")
 	fs.BoolVar(&o.DisableAVSetNodes, "disable-avset-nodes", false, "disable DisableAvailabilitySetNodes in cloud config for controller")
 	fs.StringVar(&o.Endpoint, "endpoint", "unix://tmp/csi.sock", "CSI endpoint")
+
+	fs.StringVar(&o.KMSAddr, "kms-addr", "kms-service.kube-system:9000", "Address of Constellation's KMS. Used to request keys (default: kms.kube-system:9000")
 
 	return fs
 }

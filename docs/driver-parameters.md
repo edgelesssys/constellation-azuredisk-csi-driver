@@ -9,7 +9,7 @@
 "Microsoft.Compute/virtualMachines/*/read",
 "Microsoft.Compute/virtualMachineScaleSets/virtualMachines/write",
 "Microsoft.Compute/virtualMachineScaleSets/*/read",
-"Microsoft.Compute/virtualMachineScaleSets/read" 
+"Microsoft.Compute/virtualMachineScaleSets/read"
 </pre>
 </details>
 

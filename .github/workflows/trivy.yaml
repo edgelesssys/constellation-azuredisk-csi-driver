@@ -1,5 +1,6 @@
 name: Trivy vulnerability scanner
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -17,7 +18,10 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcryptsetup-dev
+
       - name: Build an image from Dockerfile
         run: |
           export PUBLISH=true
@@ -25,14 +29,13 @@ jobs:
           export IMAGE_VERSION=latest
           export DOCKER_CLI_EXPERIMENTAL=enabled
           make container
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'test/azuredisk-csi:latest'
+          image-ref: 'test/azure-csi-driver:latest'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
-

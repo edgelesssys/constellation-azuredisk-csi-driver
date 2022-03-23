@@ -1,4 +1,22 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
 Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -332,5 +350,44 @@ func TestGetElementsInArray1NotInArray2(t *testing.T) {
 		if !reflect.DeepEqual(output, testCase.expectedOutput) {
 			t.Errorf("got: %v, expected: %v, desc: %v", output, testCase.expectedOutput, testCase.desc)
 		}
+	}
+}
+
+func TestGetVolumeName(t *testing.T) {
+	testCases := map[string]struct {
+		diskName    string
+		diskURI     string
+		errExpected bool
+	}{
+		"valid URI": {
+			diskName: "pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+			diskURI:  "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+		},
+		"valid URI with different name": {
+			diskName: "some-disk",
+			diskURI:  "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/some-disk",
+		},
+		"invalid URI": {
+			diskURI:     "not-a-disk-URI",
+			errExpected: true,
+		},
+		"no disk name in URI": {
+			diskURI:     "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/",
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			name, err := GetVolumeName(tc.diskURI)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.diskName, name)
+			}
+		})
 	}
 }
