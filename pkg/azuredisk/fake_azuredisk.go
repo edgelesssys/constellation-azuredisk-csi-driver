@@ -1,5 +1,10 @@
 /*
 Copyright 2020 The Kubernetes Authors.
+Copyright Edgeless Systems GmbH
+
+NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+Changes are needed to enable the use of dm-crypt.
+The original copyright notice is kept below.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,6 +68,30 @@ var (
 	}
 )
 
+type fakeCryptMapper struct {
+	deviceName string
+}
+
+func (s *fakeCryptMapper) CloseCryptDevice(volumeID string) error {
+	return nil
+}
+
+func (s *fakeCryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
+	return "/dev/mapper/" + volumeID, nil
+}
+
+func (s *fakeCryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
+	return s.deviceName, nil
+}
+
+func (s *fakeCryptMapper) GetDevicePath(volumeID string) (string, error) {
+	return s.deviceName, nil
+}
+
+func fakeEvalSymlinks(path string) (string, error) {
+	return path, nil
+}
+
 // FakeDriver defines an interface unit tests use to test either the v1 or v2 implementation of the Azure Disk CSI Driver.
 type FakeDriver interface {
 	CSIDriver
@@ -93,6 +122,8 @@ type FakeDriver interface {
 	ensureBlockTargetFile(string) error
 	getDevicePathWithLUN(lunStr string) (string, error)
 	setDiskThrottlingCache(key string, value string)
+
+	setDiskDeviceName(string)
 }
 
 type fakeDriverV1 struct {
@@ -111,6 +142,9 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.ioHandler = azureutils.NewFakeIOHandler()
 	driver.hostUtil = azureutils.NewFakeHostUtil()
 	driver.useCSIProxyGAInterface = true
+	driver.evalSymLinks = fakeEvalSymlinks
+	driver.getVolumeName = func(s string) (string, error) { return s, nil }
+	driver.cryptMapper = &fakeCryptMapper{}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -163,6 +197,10 @@ func (d *fakeDriverV1) setNextCommandOutputScripts(scripts ...testingexec.FakeAc
 
 func (d *fakeDriverV1) setDiskThrottlingCache(key string, value string) {
 	d.getDiskThrottlingCache.Set(key, value)
+}
+
+func (d *fakeDriverV1) setDiskDeviceName(name string) {
+	d.cryptMapper.(*fakeCryptMapper).deviceName = name
 }
 
 func createVolumeCapabilities(accessMode csi.VolumeCapability_AccessMode_Mode) []*csi.VolumeCapability {

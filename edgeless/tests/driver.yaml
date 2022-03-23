@@ -1,0 +1,18 @@
+StorageClass:
+  FromName: true
+DriverInfo:
+  Name: azuredisk.csi.confidential.cloud
+  SupportedFsType:
+    ext4: {}
+    ext3: {}
+    ext2: {}
+    xfs: {}
+    btrfs: {}
+  Capabilities:
+    persistence: true
+    block: true
+    exec: true
+    nodeExpansion: true
+    controllerExpansion: true
+    onlineExpansion: true
+    topology: true

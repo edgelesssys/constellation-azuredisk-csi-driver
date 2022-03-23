@@ -17,7 +17,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: managed-csi
-provisioner: disk.csi.azure.com
+provisioner: azuredisk.csi.confidential.cloud
 parameters:
   skuName: Premium_LRS
   maxShares: "2"

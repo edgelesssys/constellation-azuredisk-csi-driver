@@ -1,5 +1,10 @@
 /*
 Copyright 2019 The Kubernetes Authors.
+Copyright Edgeless Systems GmbH
+
+NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+Changes are needed to enable the use of dm-crypt.
+The original copyright notice is kept below.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -262,5 +267,44 @@ func TestVolumeLock(t *testing.T) {
 		if testCase.cleanup != nil {
 			testCase.cleanup()
 		}
+	}
+}
+
+func TestGetVolumeName(t *testing.T) {
+	testCases := map[string]struct {
+		diskName    string
+		diskURI     string
+		errExpected bool
+	}{
+		"valid URI": {
+			diskName: "pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+			diskURI:  "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/pvc-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+		},
+		"valid URI with different name": {
+			diskName: "some-disk",
+			diskURI:  "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/some-disk",
+		},
+		"invalid URI": {
+			diskURI:     "not-a-disk-URI",
+			errExpected: true,
+		},
+		"no disk name in URI": {
+			diskURI:     "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/test/providers/Microsoft.Compute/disks/",
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			name, err := GetVolumeName(tc.diskURI)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.diskName, name)
+			}
+		})
 	}
 }

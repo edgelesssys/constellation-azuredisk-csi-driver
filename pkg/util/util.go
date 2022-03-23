@@ -1,5 +1,10 @@
 /*
 Copyright 2019 The Kubernetes Authors.
+Copyright Edgeless Systems GmbH
+
+NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+Changes are needed to enable the use of dm-crypt.
+The original copyright notice is kept below.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +24,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -148,4 +154,14 @@ func (vl *VolumeLocks) Release(volumeID string) {
 	vl.mux.Lock()
 	defer vl.mux.Unlock()
 	vl.locks.Delete(volumeID)
+}
+
+// GetVolumeName parses an Azure disk URI and returns its name
+func GetVolumeName(diskURI string) (string, error) {
+	r := regexp.MustCompile(`Microsoft\.Compute\/disks\/(\S+)`)
+	match := r.FindStringSubmatch(diskURI)
+	if len(match) != 2 {
+		return "", fmt.Errorf("could not parse disk name from URI: %s", diskURI)
+	}
+	return match[1], nil
 }

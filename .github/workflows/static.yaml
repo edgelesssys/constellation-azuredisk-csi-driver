@@ -1,16 +1,21 @@
 name: Static Checks
 on:
-    pull_request: {}
-    push: {}
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
 jobs:
-    go_lint:
-        name: Go Lint
-        runs-on: ubuntu-18.04
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@master
-            - name: Run linter
-              uses: golangci/golangci-lint-action@v2
-              with:
-                  version: v1.45
-                  args: -E=gofmt,deadcode,unused,varcheck,ineffassign,revive,misspell,exportloopref,asciicheck,bodyclose,depguard,dogsled,durationcheck,errname,forbidigo -D=staticcheck --timeout=30m0s
+  go_lint:
+    name: Go Lint
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get -y install libcryptsetup-dev
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.45
+          args: -E=gofmt,deadcode,unused,varcheck,ineffassign,revive,misspell,exportloopref,asciicheck,bodyclose,depguard,dogsled,durationcheck,errname,forbidigo -D=staticcheck --timeout=30m0s
