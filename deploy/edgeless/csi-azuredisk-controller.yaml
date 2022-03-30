@@ -132,7 +132,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: azuredisk
-          image: ghcr.io/edgelesssys/encrypted-azure-csi-driver:v0.0.1
+          image: ghcr.io/edgelesssys/encrypted-azure-csi-driver:v0.1.0
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
@@ -141,7 +141,7 @@ spec:
             - "--user-agent-suffix=OSS-kubectl"
             - "--disable-avset-nodes=true"
             - "--allow-empty-cloud-config=false"
-            - "--cloud-config-secret-name=azure-cloud-provider"
+            - "--cloud-config-secret-name=azureconfig"
             - "--cloud-config-secret-namespace=kube-system"
           ports:
             - containerPort: 29602
