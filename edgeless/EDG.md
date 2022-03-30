@@ -2,56 +2,17 @@
 
 ## Prerequisites
 
-*Note*: The following steps are only required as long as we don't have a working cloud controller manager setup on Azure.
-
-Constellation on Azure creates the required permissions by default.
-
-1. Create a cloud provider config file
-
-    A full list of options for the config file can be found [here.](https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/)
-    See the following for a minimal example:
-
-    ```javascript
-    {
-      "cloud":"AzurePublicCloud",
-      "tenantId":"<tenant_ID>",
-      "subscriptionId":"<subscription_ID>",
-      "useManagedIdentityExtension":true,
-      "resourceGroup":"<constellation_resource_group>",
-      "location":"North Europe",
-      "vmType":"vmss",
-      "useInstanceMetadata":true
-    }
-    ```
-
-    Save the file to `csi-credentials/azure.json`
-
-1. Create a Kubernetes secret with the config
-
-    ```shell
-    cat <<EOF | kubectl apply -f -
-    apiVersion: v1
-    data:
-      cloud-config: $(< csi-credentials/azure.json base64 -w0)
-    kind: Secret
-    metadata:
-      name: azure-cloud-provider
-      namespace: kube-system
-    type: Opaque
-    EOF
-    ```
-
-## Deploying the driver
-
-[Only needed when pulling from a private repository] Create a pull secret:
+Create a docker-registry secret to configure pull access for the driver:
 ```shell
 kubectl create secret docker-registry regcred \
     --docker-server=DOCKER_REGISTRY_SERVER \
     --docker-username=DOCKER_USER \
     --docker-password=DOCKER_PASSWORD \
     --docker-email=DOCKER_EMAIL
-    --namespace=constellation-csi-gcp
+    --namespace=kube-system
 ```
+
+## Deploying the driver
 
 Use `kubectl` to deploy the driver to the cluster:
 ```shell
