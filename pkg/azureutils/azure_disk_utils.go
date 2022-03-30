@@ -152,7 +152,7 @@ func GetCloudProviderFromClient(kubeClient *clientset.Clientset, secretName, sec
 		InitSecretConfig: azure.InitSecretConfig{
 			SecretName:      secretName,
 			SecretNamespace: secretNamespace,
-			CloudConfigKey:  "cloud-config",
+			CloudConfigKey:  "azure.json",
 		},
 	}
 	if kubeClient != nil {
