@@ -139,6 +139,8 @@ spec:
               name: sys-devices-dir
             - mountPath: /sys/class/scsi_host/
               name: scsi-host-dir
+            - name: cryptsetup
+              mountPath: /run/cryptsetup
           resources:
             limits:
               cpu: 1
@@ -171,4 +173,8 @@ spec:
             path: /sys/class/scsi_host/
             type: Directory
           name: scsi-host-dir
+        - name: cryptsetup
+          hostPath:
+            path: /run/cryptsetup
+            type: Directory
 ---
