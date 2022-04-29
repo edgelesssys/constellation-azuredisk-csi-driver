@@ -88,7 +88,7 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-# github.com/edgelesssys/constellation v0.0.0-20220325083816-4afe72d91b05
+# github.com/edgelesssys/constellation v1.0.0
 ## explicit; go 1.18
 github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto
 github.com/edgelesssys/constellation/mount/cryptmapper
@@ -193,7 +193,7 @@ github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned
 github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/scheme
 github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1
 github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1beta1
-# github.com/martinjungblut/go-cryptsetup v0.0.0-20220317181052-e70d6b615049
+# github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
 ## explicit; go 1.16
 github.com/martinjungblut/go-cryptsetup
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369

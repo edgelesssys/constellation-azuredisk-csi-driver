@@ -16,7 +16,7 @@ kubectl create secret docker-registry regcred \
 
 Use `kubectl` to deploy the driver to the cluster:
 ```shell
-kubectl apply -f deploy/edgeless/
+kubectl apply -f deploy/edgeless/v1.0.0
 ```
 
 ## Use
