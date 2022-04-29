@@ -71,7 +71,9 @@ func initKlogV1() {
 	klogv1Flags.Bool("enable-disk-capacity-check", false, "")
 	// klog v2 has one more flag option than v1, add the definition manually
 	klogv1Flags.Bool("one_output", false, "")
-	klogv1Flags.Parse(os.Args[1:])
+	if err := klogv1Flags.Parse(os.Args[1:]); err != nil {
+		klog.Fatalln(err)
+	}
 }
 
 var (
