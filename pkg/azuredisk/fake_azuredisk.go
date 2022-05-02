@@ -148,7 +148,6 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.ioHandler = azureutils.NewFakeIOHandler()
 	driver.hostUtil = azureutils.NewFakeHostUtil()
 	driver.useCSIProxyGAInterface = true
-	driver.dmIntegrity = false
 	driver.evalSymLinks = fakeEvalSymlinks
 	driver.getVolumeName = func(s string) (string, error) { return s, nil }
 	driver.cryptMapper = cryptmapper.New(cryptKms.NewStaticKMS(), &stubCryptDevice{})

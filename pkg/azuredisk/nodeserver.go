@@ -31,6 +31,7 @@ import (
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/edgelesssys/constellation/mount/cryptmapper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -161,11 +162,12 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	}
 
 	// [Edgeless] Map the device as a crypt device, creating a new LUKS partition if needed
+	fstype, integrity := cryptmapper.IsIntegrityFS(fstype)
 	devicePathReal, err := d.evalSymLinks(source)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
 	}
-	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, d.dmIntegrity)
+	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, integrity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
 	}

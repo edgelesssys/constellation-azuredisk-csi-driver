@@ -82,12 +82,21 @@ Please note that enabling integrity protection requires wiping the disk before u
 For small disks (10GB-20GB) this may only take a minute or two, while larger disks can take up to an hour or more, potentially blocking your Pods from starting for that time.
 If you intend to provision large amounts of storage and Pod creation speed is important, we recommend to not use this option.
 
-To enable integrity protection support for the CSI driver, set `--integrity` to `true` in `deploy/edgeless/csi-azuredisk-node.yaml` and apply the changes:
-```shell
-sed -i s/--integrity=false/--integrity=true/g ./deploy/edgeless/csi-azuredisk-node.yaml
-kubectl apply -f deploy/edgeless
+To enable integrity protection, create a storage class with an explicit file system type request and the integrity suffix.
+The following is a storage class for integrity protected `ext4` formatted disks:
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: integrity-protected
+provisioner: azuredisk.csi.confidential.cloud
+parameters:
+  skuName: StandardSSD_LRS
+  csi.storage.k8s.io/fstype: ext4-integrity
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
 ```
-
 
 ## Cleanup
 
