@@ -71,7 +71,6 @@ type DriverOptions struct {
 	SupportZone                bool
 	GetNodeInfoFromLabels      bool
 	EnableDiskCapacityCheck    bool
-	DMIntegrity                bool
 	ConstellationAddr          string
 }
 
@@ -112,7 +111,6 @@ type DriverCore struct {
 	supportZone                bool
 	getNodeInfoFromLabels      bool
 	enableDiskCapacityCheck    bool
-	dmIntegrity                bool
 	getVolumeName              func(string) (string, error)
 	evalSymLinks               func(string) (string, error)
 	cryptMapper                *cryptmapper.CryptMapper
@@ -153,7 +151,6 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.hostUtil = hostutil.NewHostUtil()
 
 	// [Edgeless] set up dm-crypt
-	driver.dmIntegrity = options.DMIntegrity
 	driver.evalSymLinks = filepath.EvalSymlinks
 	driver.getVolumeName = util.GetVolumeName
 	driver.cryptMapper = cryptmapper.New(
