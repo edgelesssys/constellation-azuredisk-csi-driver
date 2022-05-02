@@ -98,7 +98,6 @@ spec:
             - "--cloud-config-secret-name=azureconfig"
             - "--cloud-config-secret-namespace=kube-system"
             - "--constellation-addr=10.118.0.1:9027"
-            - "--integrity=false"
           ports:
             - containerPort: 29603
               name: healthz

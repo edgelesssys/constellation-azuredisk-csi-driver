@@ -82,7 +82,6 @@ func newDriverV2(options *DriverOptions) *DriverV2 {
 	driver.hostUtil = hostutil.NewHostUtil()
 
 	// [Edgeless] set up dm-crypt
-	driver.dmIntegrity = options.DMIntegrity
 	driver.evalSymLinks = filepath.EvalSymlinks
 	driver.getVolumeName = volumehelper.GetVolumeName
 	driver.cryptMapper = cryptmapper.New(

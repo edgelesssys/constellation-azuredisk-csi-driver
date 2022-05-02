@@ -46,7 +46,6 @@ func initKlogV1() {
 
 	// There is no option to ignore unknown flags, so we need to add all flags of the main program to our klog flag set.
 	klogv1Flags.String("constellation-addr", "", "")
-	klogv1Flags.Bool("integrity", false, "")
 	klogv1Flags.String("endpoint", "", "")
 	klogv1Flags.String("nodeid", "", "")
 	klogv1Flags.Bool("version", false, "")
@@ -78,7 +77,6 @@ func initKlogV1() {
 
 var (
 	constellationAddr          = flag.String("constellation-addr", "10.118.0.1:9027", "Address of the Constellation Coordinator's VPN API. Used to request keys (default: 10.118.0.1:9027")
-	dmIntegrity                = flag.Bool("integrity", false, "Set to enable dm-integrity for mounted volumes (default: false)")
 	endpoint                   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	nodeID                     = flag.String("nodeid", "", "node id")
 	version                    = flag.Bool("version", false, "Print the version and exit.")
@@ -148,7 +146,6 @@ func handle() {
 		EnableDiskCapacityCheck:    *enableDiskCapacityCheck,
 		VMSSCacheTTLInSeconds:      *vmssCacheTTLInSeconds,
 		VMType:                     *vmType,
-		DMIntegrity:                *dmIntegrity,
 		ConstellationAddr:          *constellationAddr,
 	}
 	driver := azuredisk.NewDriver(&driverOptions)
