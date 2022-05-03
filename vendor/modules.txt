@@ -88,7 +88,7 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-# github.com/edgelesssys/constellation v1.0.0
+# github.com/edgelesssys/constellation v1.0.1-0.20220503064026-66ae725262df
 ## explicit; go 1.18
 github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto
 github.com/edgelesssys/constellation/mount/cryptmapper
