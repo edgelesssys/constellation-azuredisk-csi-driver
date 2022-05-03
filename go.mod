@@ -38,7 +38,7 @@ require (
 )
 
 require (
-	github.com/edgelesssys/constellation v1.0.0
+	github.com/edgelesssys/constellation v1.0.1-0.20220503064026-66ae725262df
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
 	k8s.io/klog v1.0.0
 )
