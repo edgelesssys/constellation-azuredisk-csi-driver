@@ -889,10 +889,6 @@ func TestNodeExpandVolume(t *testing.T) {
 		DefaultError: status.Error(codes.NotFound, "failed to determine device path for volumePath [./test]: path \"./test\" does not exist"),
 	}
 
-	devicePathErr := testutil.TestError{
-		DefaultError: status.Errorf(codes.NotFound, "could not determine device path(%s), error: %v", targetTest, notFoundErr),
-		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
-	}
 	blockSizeErr := testutil.TestError{
 		DefaultError: status.Error(codes.Internal, "could not get size of block volume at path test: error when getting size of block volume at path test: output: , err: exit status 1"),
 		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
@@ -908,9 +904,6 @@ func TestNodeExpandVolume(t *testing.T) {
 
 	notFoundErrAction := func() ([]byte, []byte, error) {
 		return []byte{}, []byte{}, notFoundErr
-	}
-	findmntAction := func() ([]byte, []byte, error) {
-		return []byte("test"), []byte{}, nil
 	}
 	blkidAction := func() ([]byte, []byte, error) {
 		return []byte("DEVICE=test\nTYPE=ext4"), []byte{}, nil
@@ -964,17 +957,6 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 		},
 		{
-			desc: "Invalid device path",
-			req: csi.NodeExpandVolumeRequest{
-				CapacityRange:     stdCapacityRange,
-				VolumePath:        targetTest,
-				VolumeId:          "test",
-				StagingTargetPath: "",
-			},
-			expectedErr:   devicePathErr,
-			outputScripts: []testingexec.FakeAction{notFoundErrAction},
-		},
-		{
 			desc: "No block size at path",
 			req: csi.NodeExpandVolumeRequest{
 				CapacityRange:     stdCapacityRange,
@@ -984,7 +966,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   blockSizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, notFoundErrAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, notFoundErrAction},
 		},
 		{
 			desc: "Resize failure",
@@ -996,7 +978,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   resizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsFailedAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsFailedAction},
 		},
 		{
 			desc: "Resize too small failure",
@@ -1008,7 +990,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   sizeTooSmallErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, blockdevSizeTooSmallAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, blockdevSizeTooSmallAction},
 		},
 		{
 			desc: "Successfully expanded",
@@ -1020,7 +1002,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			skipOnWindows: true,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, blockdevAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, blockdevAction},
 		},
 		{
 			desc: "Block volume expansion",
@@ -1059,6 +1041,8 @@ func TestNodeExpandVolume(t *testing.T) {
 		if runtime.GOOS != "windows" {
 			d.setNextCommandOutputScripts(test.outputScripts...)
 		}
+
+		d.setDiskDeviceName("test")
 
 		_, err := d.NodeExpandVolume(context.Background(), &test.req)
 		if !testutil.AssertError(&test.expectedErr, err) {

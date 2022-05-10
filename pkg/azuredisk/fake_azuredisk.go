@@ -23,10 +23,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/edgelesssys/constellation/mount/cryptmapper"
-	cryptKms "github.com/edgelesssys/constellation/mount/kms"
 	"github.com/golang/mock/gomock"
-	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/mount-utils"
 	testingexec "k8s.io/utils/exec/testing"
@@ -66,34 +63,24 @@ var (
 	}
 )
 
-type stubCryptDevice struct{}
+type fakeCryptMapper struct {
+	deviceName string
+}
 
-func (c *stubCryptDevice) Init(devicePath string) error {
+func (s *fakeCryptMapper) CloseCryptDevice(volumeID string) error {
 	return nil
 }
 
-func (c *stubCryptDevice) ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error {
-	return nil
+func (s *fakeCryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
+	return "/dev/mapper/" + volumeID, nil
 }
 
-func (c *stubCryptDevice) Deactivate(deviceName string) error {
-	return nil
+func (s *fakeCryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
+	return s.deviceName, nil
 }
 
-func (c *stubCryptDevice) Format(deviceType cryptsetup.DeviceType, genericParams cryptsetup.GenericParams) error {
-	return nil
-}
-
-func (c *stubCryptDevice) Free() bool {
-	return true
-}
-
-func (c *stubCryptDevice) Load(cryptsetup.DeviceType) error {
-	return nil
-}
-
-func (c *stubCryptDevice) Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error {
-	return nil
+func (s *fakeCryptMapper) GetDevicePath(volumeID string) (string, error) {
+	return s.deviceName, nil
 }
 
 func fakeEvalSymlinks(path string) (string, error) {
@@ -130,6 +117,8 @@ type FakeDriver interface {
 	ensureBlockTargetFile(string) error
 	getDevicePathWithLUN(lunStr string) (string, error)
 	setDiskThrottlingCache(key string, value string)
+
+	setDiskDeviceName(string)
 }
 
 type fakeDriverV1 struct {
@@ -150,7 +139,7 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.useCSIProxyGAInterface = true
 	driver.evalSymLinks = fakeEvalSymlinks
 	driver.getVolumeName = func(s string) (string, error) { return s, nil }
-	driver.cryptMapper = cryptmapper.New(cryptKms.NewStaticKMS(), &stubCryptDevice{})
+	driver.cryptMapper = &fakeCryptMapper{}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -203,6 +192,10 @@ func (d *fakeDriverV1) setNextCommandOutputScripts(scripts ...testingexec.FakeAc
 
 func (d *fakeDriverV1) setDiskThrottlingCache(key string, value string) {
 	d.getDiskThrottlingCache.Set(key, value)
+}
+
+func (d *fakeDriverV1) setDiskDeviceName(name string) {
+	d.cryptMapper.(*fakeCryptMapper).deviceName = name
 }
 
 func createVolumeCapabilities(accessMode csi.VolumeCapability_AccessMode_Mode) []*csi.VolumeCapability {
