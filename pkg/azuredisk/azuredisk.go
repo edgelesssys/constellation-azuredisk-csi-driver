@@ -87,6 +87,13 @@ type hostUtil interface {
 	PathIsDevice(string) (bool, error)
 }
 
+type cryptMapper interface {
+	CloseCryptDevice(volumeID string) error
+	OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error)
+	ResizeCryptDevice(ctx context.Context, volumeID string) (string, error)
+	GetDevicePath(volumeID string) (string, error)
+}
+
 // DriverCore contains fields common to both the V1 and V2 driver, and implements all interfaces of CSI drivers
 type DriverCore struct {
 	csicommon.CSIDriver
@@ -113,7 +120,7 @@ type DriverCore struct {
 	enableDiskCapacityCheck    bool
 	getVolumeName              func(string) (string, error)
 	evalSymLinks               func(string) (string, error)
-	cryptMapper                *cryptmapper.CryptMapper
+	cryptMapper                cryptMapper
 }
 
 // Driver is the v1 implementation of the Azure Disk CSI Driver.
