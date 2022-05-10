@@ -130,7 +130,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		return nil, status.Errorf(codes.Internal, "could not mount target %q: %v", target, err)
 	}
 	if mnt {
-		klog.V(2).Infof("NodeStageVolume: already mounted on target %s", target)
+		klog.V(2).Infof("NodeStageVolume: already mounted on target %s", target) // if volume is already mounted, we also already opened the crypt device
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
@@ -532,8 +532,13 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
 	}
+	diskName, err := d.getVolumeName(volumeID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
+	}
+
 	capacityBytes := req.GetCapacityRange().GetRequiredBytes()
-	volSizeBytes := int64(capacityBytes)
+	volSizeBytes := int64(capacityBytes - cryptmapper.LUKSHeaderSize) // LUKS2 header is 16MiB, subtract from request size to get expected value)
 	requestGiB := volumehelper.RoundUpGiB(volSizeBytes)
 
 	volumePath := req.GetVolumePath()
@@ -552,6 +557,12 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 		}
 	}
 
+	// [Edgeless] need to acquire lock before resizing block device LUKS partition
+	if acquired := d.volumeLocks.TryAcquire(volumeID); !acquired {
+		return nil, status.Errorf(codes.Aborted, volumeOperationAlreadyExistsFmt, volumeID)
+	}
+	defer d.volumeLocks.Release(volumeID)
+
 	if isBlock {
 		if d.enableDiskOnlineResize {
 			klog.V(2).Info("NodeExpandVolume begin to rescan all devices on block volume(%s)", volumeID)
@@ -559,25 +570,30 @@ func (d *Driver) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolume
 				klog.Errorf("NodeExpandVolume rescanAllVolumes failed with error: %v", err)
 			}
 		}
+		// [Edgeless] Resize LUKS partition
+		if _, err := d.cryptMapper.ResizeCryptDevice(ctx, diskName); err != nil {
+			return nil, status.Errorf(codes.Internal, "resizing crypt device: %v", err)
+		}
 		klog.V(2).Info("NodeExpandVolume skip resize operation on block volume(%s)", volumeID)
 		return &csi.NodeExpandVolumeResponse{}, nil
 	}
 
-	if acquired := d.volumeLocks.TryAcquire(volumeID); !acquired {
-		return nil, status.Errorf(codes.Aborted, volumeOperationAlreadyExistsFmt, volumeID)
-	}
-	defer d.volumeLocks.Release(volumeID)
-
-	devicePath, err := getDevicePathWithMountPath(volumePath, d.mounter)
+	devicePath, err := d.cryptMapper.GetDevicePath(diskName)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	}
 
 	if d.enableDiskOnlineResize {
-		klog.V(2).Info("NodeExpandVolume begin to rescan device %s on volume(%s)", devicePath, volumeID)
+		klog.V(2).Infof("NodeExpandVolume begin to rescan device %s on volume(%s)", devicePath, volumeID)
 		if err := rescanVolume(d.ioHandler, devicePath); err != nil {
 			klog.Errorf("NodeExpandVolume rescanVolume failed with error: %v", err)
 		}
+	}
+
+	// [Edgeless] Resize LUKS partition
+	devicePath, err = d.cryptMapper.ResizeCryptDevice(ctx, diskName)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "resizing crypt device: %v", err)
 	}
 
 	if err := resizeVolume(devicePath, volumePath, d.mounter); err != nil {
