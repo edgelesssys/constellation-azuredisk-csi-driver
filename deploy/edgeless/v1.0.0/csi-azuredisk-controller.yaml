@@ -23,14 +23,14 @@ spec:
         - key: "node-role.kubernetes.io/master"
           operator: "Exists"
           effect: "NoSchedule"
-        - key: "node-role.kubernetes.io/controlplane"
+        - key: "node-role.kubernetes.io/control-plane"
           operator: "Exists"
           effect: "NoSchedule"
       imagePullSecrets:
       - name: regcred
       containers:
         - name: csi-provisioner
-          image: mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner:v2.2.2
+          image: mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner:v3.1.0
           args:
             - "--feature-gates=Topology=true"
             - "--csi-address=$(ADDRESS)"
@@ -48,13 +48,12 @@ spec:
               name: socket-dir
           resources:
             limits:
-              cpu: 1
               memory: 500Mi
             requests:
               cpu: 10m
               memory: 20Mi
         - name: csi-attacher
-          image: mcr.microsoft.com/oss/kubernetes-csi/csi-attacher:v3.3.0
+          image: mcr.microsoft.com/oss/kubernetes-csi/csi-attacher:v3.4.0
           args:
             - "-v=2"
             - "-csi-address=$(ADDRESS)"
@@ -69,13 +68,12 @@ spec:
               name: socket-dir
           resources:
             limits:
-              cpu: 1
               memory: 500Mi
             requests:
               cpu: 10m
               memory: 20Mi
         - name: csi-snapshotter
-          image: mcr.microsoft.com/oss/kubernetes-csi/csi-snapshotter:v3.0.3
+          image: mcr.microsoft.com/oss/kubernetes-csi/csi-snapshotter:v5.0.1
           args:
             - "-csi-address=$(ADDRESS)"
             - "-leader-election"
@@ -88,19 +86,19 @@ spec:
               mountPath: /csi
           resources:
             limits:
-              cpu: 1
               memory: 100Mi
             requests:
               cpu: 10m
               memory: 20Mi
         - name: csi-resizer
-          image: mcr.microsoft.com/oss/kubernetes-csi/csi-resizer:v1.3.0
+          image: mcr.microsoft.com/oss/kubernetes-csi/csi-resizer:v1.4.0
           args:
             - "-csi-address=$(ADDRESS)"
             - "-v=2"
             - "-leader-election"
             - '-handle-volume-inuse-error=false'
-            - "-timeout=60s"
+            - '-feature-gates=RecoverVolumeExpansionFailure=true'
+            - "-timeout=240s"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -109,7 +107,6 @@ spec:
               mountPath: /csi
           resources:
             limits:
-              cpu: 1
               memory: 500Mi
             requests:
               cpu: 10m
@@ -126,7 +123,6 @@ spec:
               mountPath: /csi
           resources:
             limits:
-              cpu: 1
               memory: 100Mi
             requests:
               cpu: 10m
@@ -139,7 +135,7 @@ spec:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--metrics-address=0.0.0.0:29604"
             - "--user-agent-suffix=OSS-kubectl"
-            - "--disable-avset-nodes=true"
+            - "--disable-avset-nodes=false"
             - "--allow-empty-cloud-config=false"
             - "--cloud-config-secret-name=azureconfig"
             - "--cloud-config-secret-namespace=kube-system"
@@ -172,7 +168,6 @@ spec:
               name: socket-dir
           resources:
             limits:
-              cpu: 1
               memory: 500Mi
             requests:
               cpu: 10m
