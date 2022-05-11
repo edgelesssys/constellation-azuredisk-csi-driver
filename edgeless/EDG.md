@@ -14,10 +14,21 @@ kubectl create secret docker-registry regcred \
 
 ## Deploying the driver
 
-Use `kubectl` to deploy the driver to the cluster:
+Use `helm` to deploy the driver to your cluster:
+```shell
+helm install azuredisk-csi-driver charts/edgeless/v1.0.0/azuredisk-csi-driver-v1.0.0.tgz \
+    --namespace kube-system \
+    --set controller.runOnMaster=true \
+    --set linux.distro=fedora \
+    --set controller.replicas=1
+```
+See [helm configuration](../charts/README.md#V1-Parameters) for a detailed list on configuration options.
+
+Alternatively, you can also use `kubectl` to deploy the driver to the cluster:
 ```shell
 kubectl apply -f deploy/edgeless/v1.0.0
 ```
+
 
 ## Use
 
@@ -100,7 +111,12 @@ allowVolumeExpansion: true
 
 ## Cleanup
 
-Remove the driver by running the following:
+Remove the driver using helm:
+```shell
+helm uninstall azuredisk-csi-driver -n kube-system
+```
+
+Remove the driver using kubectl:
 ```shell
 kubectl delete -f deploy/edgeless/
 ```
@@ -109,5 +125,5 @@ kubectl delete -f deploy/edgeless/
 
 ```shell
 make REGISTRY=ghcr.io/edgelesssys IMAGE_NAME=encrypted-azure-csi-driver IMAGE_VERSION=test container
-push ghcr.io/edgelesssys/encrypted-azure-csi-driver:test
+docker push ghcr.io/edgelesssys/encrypted-azure-csi-driver:test
 ```
