@@ -656,9 +656,6 @@ func TestNodePublishVolume(t *testing.T) {
 	d, _ := NewFakeDriver(t)
 
 	volumeCap := csi.VolumeCapability_AccessMode{Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER}
-	publishContext := map[string]string{
-		consts.LUN: "/dev/01",
-	}
 	errorMountSource, err := testutil.GetWorkDirPath("error_mount_source")
 	assert.NoError(t, err)
 	alreadyMountedTarget, err := testutil.GetWorkDirPath("false_is_likely_exist_target")
@@ -730,29 +727,6 @@ func TestNodePublishVolume(t *testing.T) {
 			expectedErr: testutil.TestError{
 				DefaultError: status.Errorf(codes.Internal, fmt.Sprintf("could not mount target \"%s\": "+
 					"mkdir %s: not a directory", azuredisk, azuredisk)),
-			},
-		},
-		{
-			desc: "[Error] Lun not provided",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
-				VolumeId:          "vol_1",
-				TargetPath:        azuredisk,
-				StagingTargetPath: sourceTest,
-				Readonly:          true},
-			expectedErr: testutil.TestError{
-				DefaultError: status.Error(codes.InvalidArgument, "lun not provided"),
-			},
-		},
-		{
-			desc: "[Error] Lun not valid",
-			req: csi.NodePublishVolumeRequest{VolumeCapability: &csi.VolumeCapability{AccessMode: &volumeCap, AccessType: stdVolCapBlock},
-				VolumeId:          "vol_1",
-				TargetPath:        azuredisk,
-				StagingTargetPath: sourceTest,
-				PublishContext:    publishContext,
-				Readonly:          true},
-			expectedErr: testutil.TestError{
-				DefaultError: status.Error(codes.Internal, "failed to find device path with lun /dev/01. cannot parse deviceInfo: /dev/01"),
 			},
 		},
 		{
