@@ -188,4 +188,3 @@ cloud: AzurePublicCloud
 ##
 imagePullSecrets:
   name: "regcred"
-# - name: "image-pull-secret"
