@@ -123,12 +123,6 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		}
 	}
 
-	// If the access type is block, do nothing for stage
-	switch req.GetVolumeCapability().GetAccessType().(type) {
-	case *csi.VolumeCapability_Block:
-		return &csi.NodeStageVolumeResponse{}, nil
-	}
-
 	mnt, err := d.ensureMountPoint(target)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not mount target %q: %v", target, err)
@@ -168,6 +162,12 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, integrity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
+	}
+
+	if blk := volumeCapability.GetBlock(); blk != nil {
+		// Noop for Block NodeStageVolume
+		klog.V(4).Infof("NodeStageVolume succeeded on %s to %s, capability is block so this is a no-op", diskURI, target)
+		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
 	// FormatAndMount will format only if needed
@@ -280,16 +280,16 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 
 	switch req.GetVolumeCapability().GetAccessType().(type) {
 	case *csi.VolumeCapability_Block:
-		lun, ok := req.PublishContext[consts.LUN]
-		if !ok {
-			return nil, status.Error(codes.InvalidArgument, "lun not provided")
-		}
-		var err error
-		source, err = d.getDevicePathWithLUN(lun)
+		diskName, err := d.getVolumeName(volumeID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find device path with lun %s. %v", lun, err)
+			return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 		}
-		klog.V(2).Infof("NodePublishVolume [block]: found device path %s with lun %s", source, lun)
+		source, err = d.evalSymLinks(filepath.Join("/dev/mapper", diskName))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "NodePublishVolume: can not evaluate source path: %v", err)
+		}
+
+		klog.V(2).Infof("NodePublishVolume [block]: found device path %s", source)
 		err = d.ensureBlockTargetFile(target)
 		if err != nil {
 			return nil, err
