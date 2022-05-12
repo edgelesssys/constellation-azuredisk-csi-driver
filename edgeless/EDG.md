@@ -109,7 +109,7 @@ volumeBindingMode: Immediate
 allowVolumeExpansion: true
 ```
 
-Please not that [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) is not supported for integrity protected disks.
+Please note that [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) is not supported for integrity-protected disks.
 
 ## Cleanup
 
