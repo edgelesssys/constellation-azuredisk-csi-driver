@@ -91,9 +91,10 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-# github.com/edgelesssys/constellation v1.0.1-0.20220504151640-e07e4700c562
+# github.com/edgelesssys/constellation v1.0.1-0.20220513072454-810675b9a4f7
 ## explicit; go 1.18
 github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto
+github.com/edgelesssys/constellation/internal/constants
 github.com/edgelesssys/constellation/mount/cryptmapper
 github.com/edgelesssys/constellation/mount/kms
 # github.com/emicklei/go-restful v2.9.5+incompatible
@@ -218,7 +219,7 @@ github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typ
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
+# github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7 => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
 ## explicit; go 1.16
 github.com/martinjungblut/go-cryptsetup
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
@@ -1202,3 +1203,4 @@ sigs.k8s.io/yaml
 # k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.24.0
 # k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 # sigs.k8s.io/cloud-provider-azure => sigs.k8s.io/cloud-provider-azure v0.7.4-0.20220309155012-8a8c170f3d02
+# github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
