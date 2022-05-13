@@ -38,7 +38,7 @@ require (
 )
 
 require (
-	github.com/edgelesssys/constellation v1.0.1-0.20220504151640-e07e4700c562
+	github.com/edgelesssys/constellation v1.0.1-0.20220513072454-810675b9a4f7
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
 )
 
@@ -161,3 +161,5 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 	sigs.k8s.io/cloud-provider-azure => sigs.k8s.io/cloud-provider-azure v0.7.4-0.20220309155012-8a8c170f3d02
 )
+
+replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
