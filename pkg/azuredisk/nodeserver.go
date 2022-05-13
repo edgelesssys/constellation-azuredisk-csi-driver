@@ -183,7 +183,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 		needResize = true
 	}
 	if !needResize {
-		if needResize, err = needResizeVolume(source, target, d.mounter); err != nil {
+		if needResize, err = needResizeVolume(devicePath, target, d.mounter); err != nil {
 			klog.Errorf("NodeStageVolume: could not determine if volume %s needs to be resized: %v", diskURI, err)
 		}
 	}
@@ -191,8 +191,8 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	// if resize is required, resize filesystem
 	if needResize {
 		klog.V(2).Infof("NodeStageVolume: fs resize initiating on target(%s) volumeid(%s)", target, diskURI)
-		if err := resizeVolume(source, target, d.mounter); err != nil {
-			return nil, status.Errorf(codes.Internal, "NodeStageVolume: could not resize volume %s (%s):  %v", source, target, err)
+		if err := resizeVolume(devicePath, target, d.mounter); err != nil {
+			return nil, status.Errorf(codes.Internal, "NodeStageVolume: could not resize volume %s (%s):  %v", devicePath, target, err)
 		}
 		klog.V(2).Infof("NodeStageVolume: fs resize successful on target(%s) volumeid(%s).", target, diskURI)
 	}
