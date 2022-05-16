@@ -143,7 +143,8 @@ e2e-teardown:
 
 .PHONY: azuredisk
 azuredisk:
-	CGO_ENABLED=1 GOOS=linux GOARCH=$(ARCH) go build -trimpath -a -ldflags ${LDFLAGS} -mod vendor -o _output/${ARCH}/${PLUGIN_NAME} ./pkg/azurediskplugin
+	mkdir -p _output/${ARCH} && \
+    DOCKER_BUILDKIT=1 docker build --build-arg ARCH=${ARCH} --build-arg LDFLAGS=${LDFLAGS} --build-arg PLUGIN_NAME=${PLUGIN_NAME} -o _output/${ARCH} .
 
 .PHONY: azuredisk-v2
 azuredisk-v2:
