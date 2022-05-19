@@ -11,7 +11,7 @@ apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
   name: csi-azuredisk-vsc
-driver: disk.csi.azure.com
+driver: azuredisk.csi.confidential.cloud
 deletionPolicy: Delete
 parameters:
   incremental: "true"  # available values: "true"(by default), "false"
