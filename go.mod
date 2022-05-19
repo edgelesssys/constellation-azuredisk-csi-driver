@@ -37,10 +37,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require (
-	github.com/edgelesssys/constellation v1.0.1-0.20220513072454-810675b9a4f7
-	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
-)
+require github.com/edgelesssys/constellation v1.0.1-0.20220519065628-2ba307dc13da
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -69,6 +66,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -105,7 +103,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99 // indirect
 	k8s.io/apiextensions-apiserver v0.0.0 // indirect
 	k8s.io/apiserver v0.24.0 // indirect
 	k8s.io/component-helpers v0.24.0 // indirect
