@@ -75,9 +75,9 @@ azurefile                      kubernetes.io/azure-file   Delete          Immedi
 azurefile-csi                  file.csi.azure.com         Delete          Immediate              true                   2m30s
 azurefile-csi-premium          file.csi.azure.com         Delete          Immediate              true                   2m30s
 azurefile-premium              kubernetes.io/azure-file   Delete          Immediate              true                   2m30s
-default (default)              disk.csi.azure.com         Delete          WaitForFirstConsumer   true                   2m30s
+default (default)              azuredisk.csi.confidential.cloud         Delete          WaitForFirstConsumer   true                   2m30s
 managed                        kubernetes.io/azure-disk   Delete          WaitForFirstConsumer   true                   2m30s
-managed-csi-premium            disk.csi.azure.com         Delete          WaitForFirstConsumer   true                   2m30s
+managed-csi-premium            azuredisk.csi.confidential.cloud         Delete          WaitForFirstConsumer   true                   2m30s
 managed-premium                kubernetes.io/azure-disk   Delete          WaitForFirstConsumer   true                   2m30s
 ```
 
