@@ -231,7 +231,6 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
-		csi.ControllerServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
 	}
 	if d.enableListVolumes {
 		controllerCap = append(controllerCap, csi.ControllerServiceCapability_RPC_LIST_VOLUMES, csi.ControllerServiceCapability_RPC_LIST_VOLUMES_PUBLISHED_NODES)
@@ -246,13 +245,11 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 			csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
 			csi.VolumeCapability_AccessMode_SINGLE_NODE_READER_ONLY,
 			csi.VolumeCapability_AccessMode_SINGLE_NODE_SINGLE_WRITER,
-			csi.VolumeCapability_AccessMode_SINGLE_NODE_MULTI_WRITER,
 		})
 	d.AddNodeServiceCapabilities([]csi.NodeServiceCapability_RPC_Type{
 		csi.NodeServiceCapability_RPC_STAGE_UNSTAGE_VOLUME,
 		csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
 		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
-		csi.NodeServiceCapability_RPC_SINGLE_NODE_MULTI_WRITER,
 	})
 
 	s := csicommon.NewNonBlockingGRPCServer()
