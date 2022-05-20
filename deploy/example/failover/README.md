@@ -65,20 +65,20 @@ helm install azuredisk-csi-driver-v2 azuredisk-csi-driver/azuredisk-csi-driver \
 
 kubectl get storageclasses.storage.k8s.io 
 
-NAME                    PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-azuredisk-premium-ssd-lrs      disk2.csi.azure.com        Delete          WaitForFirstConsumer   true                   2m20s
-azuredisk-premium-ssd-zrs      disk2.csi.azure.com        Delete          Immediate              true                   2m20s
-azuredisk-standard-hdd-lrs     disk2.csi.azure.com        Delete          WaitForFirstConsumer   true                   2m20s
-azuredisk-standard-ssd-lrs     disk2.csi.azure.com        Delete          WaitForFirstConsumer   true                   2m20s
-azuredisk-standard-ssd-zrs     disk2.csi.azure.com        Delete          Immediate              true                   2m20s
-azurefile                      kubernetes.io/azure-file   Delete          Immediate              true                   2m30s
-azurefile-csi                  file.csi.azure.com         Delete          Immediate              true                   2m30s
-azurefile-csi-premium          file.csi.azure.com         Delete          Immediate              true                   2m30s
-azurefile-premium              kubernetes.io/azure-file   Delete          Immediate              true                   2m30s
-default (default)              azuredisk.csi.confidential.cloud         Delete          WaitForFirstConsumer   true                   2m30s
-managed                        kubernetes.io/azure-disk   Delete          WaitForFirstConsumer   true                   2m30s
-managed-csi-premium            azuredisk.csi.confidential.cloud         Delete          WaitForFirstConsumer   true                   2m30s
-managed-premium                kubernetes.io/azure-disk   Delete          WaitForFirstConsumer   true                   2m30s
+NAME                          PROVISIONER                        RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+azuredisk-premium-ssd-lrs      disk2.csi.azure.com                Delete          WaitForFirstConsumer   true                   2m20s
+azuredisk-premium-ssd-zrs      disk2.csi.azure.com                Delete          Immediate              true                   2m20s
+azuredisk-standard-hdd-lrs     disk2.csi.azure.com                Delete          WaitForFirstConsumer   true                   2m20s
+azuredisk-standard-ssd-lrs     disk2.csi.azure.com                Delete          WaitForFirstConsumer   true                   2m20s
+azuredisk-standard-ssd-zrs     disk2.csi.azure.com                Delete          Immediate              true                   2m20s
+azurefile                      kubernetes.io/azure-file           Delete          Immediate              true                   2m30s
+azurefile-csi                  file.csi.azure.com                 Delete          Immediate              true                   2m30s
+azurefile-csi-premium          file.csi.azure.com                 Delete          Immediate              true                   2m30s
+azurefile-premium              kubernetes.io/azure-file           Delete          Immediate              true                   2m30s
+default (default)              azuredisk.csi.confidential.cloud   Delete          Immediate              true                   2m30s
+managed                        kubernetes.io/azure-disk           Delete          WaitForFirstConsumer   true                   2m30s
+managed-csi-premium            azuredisk.csi.confidential.cloud   Delete          Immediate              true                   2m30s
+managed-premium                kubernetes.io/azure-disk           Delete          WaitForFirstConsumer   true                   2m30s
 ```
 
 To achieve faster pod failover and benefit from the replica mount feature of the Azure Disk CSI V2 driver, create a new storage class that sets the parameter for `maxShares` > 1.
