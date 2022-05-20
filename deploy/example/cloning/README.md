@@ -42,10 +42,10 @@ Access Modes:  RWO
 VolumeMode:    Filesystem
 Mounted By:    <none>
 Events:
-  Type    Reason                 Age                From                                                                                               Message
-  ----    ------                 ----               ----                                                                                               -------
+  Type    Reason                 Age                From                                                                                                             Message
+  ----    ------                 ----               ----                                                                                                             -------
   Normal  Provisioning           30s                azuredisk.csi.confidential.cloud_csi-azuredisk-controller-67f97cbc57-52xpb_dc6c68b9-c45a-4fac-8497-3564fed3a59a  External provisioner is provisioning volume for claim "default/pvc-azuredisk-cloning"
-  Normal  ExternalProvisioning   25s (x2 over 30s)  persistentvolume-controller                                                                        waiting for a volume to be created, either by external provisioner "azuredisk.csi.confidential.cloud" or manually created by system administrator
+  Normal  ExternalProvisioning   25s (x2 over 30s)  persistentvolume-controller                                                                                      waiting for a volume to be created, either by external provisioner "azuredisk.csi.confidential.cloud" or manually created by system administrator
   Normal  ProvisioningSucceeded  20s                azuredisk.csi.confidential.cloud_csi-azuredisk-controller-67f97cbc57-52xpb_dc6c68b9-c45a-4fac-8497-3564fed3a59a  Successfully provisioned volume pvc-276b72d5-adc5-45cd-ad67-2a1f8fd6c81b
 ```
 
