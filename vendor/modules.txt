@@ -85,10 +85,10 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-# github.com/edgelesssys/constellation v1.0.1-0.20220519065628-2ba307dc13da
+# github.com/edgelesssys/constellation v1.3.0
 ## explicit; go 1.18
-github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto
 github.com/edgelesssys/constellation/internal/constants
+github.com/edgelesssys/constellation/kms/kmsproto
 github.com/edgelesssys/constellation/mount/cryptmapper
 github.com/edgelesssys/constellation/mount/kms
 # github.com/evanphx/json-patch v5.6.0+incompatible
@@ -192,7 +192,7 @@ github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned
 github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/scheme
 github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1
 github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1beta1
-# github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7 => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
+# github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 ## explicit; go 1.16
 github.com/martinjungblut/go-cryptsetup
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
@@ -289,7 +289,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/spf13/cobra v1.4.0
+# github.com/spf13/cobra v1.5.0
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
@@ -1164,4 +1164,3 @@ sigs.k8s.io/yaml
 # k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.24.0-alpha.4
 # k8s.io/sample-controller => k8s.io/sample-controller v0.24.0-alpha.4
 # sigs.k8s.io/cloud-provider-azure => sigs.k8s.io/cloud-provider-azure v0.7.4-0.20220517092534-f7e7f2df5e24
-# github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
