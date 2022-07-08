@@ -16,9 +16,8 @@ kubectl create secret docker-registry regcred \
 
 Use `helm` to deploy the driver to your cluster:
 ```shell
-helm install azuredisk-csi-driver charts/edgeless/v1.0.0/azuredisk-csi-driver-v1.0.0.tgz \
+helm install azuredisk-csi-driver charts/edgeless/v1.3.0/azuredisk-csi-driver-v1.3.0.tgz \
     --namespace kube-system \
-    --set controller.runOnMaster=true \
     --set linux.distro=fedora \
     --set controller.replicas=1
 ```
