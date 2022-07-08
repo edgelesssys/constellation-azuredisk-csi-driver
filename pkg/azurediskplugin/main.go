@@ -37,7 +37,7 @@ func init() {
 }
 
 var (
-	constellationAddr          = flag.String("constellation-addr", "10.118.0.1:9027", "Address of the Constellation Coordinator's VPN API. Used to request keys (default: 10.118.0.1:9027")
+	kmsAddr                    = flag.String("kms-addr", "kms.kube-system:9000", "Address of Constellation's KMS. Used to request keys (default: kms.kube-system:9000")
 	endpoint                   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	nodeID                     = flag.String("nodeid", "", "node id")
 	version                    = flag.Bool("version", false, "Print the version and exit.")
@@ -106,7 +106,7 @@ func handle() {
 		EnableDiskCapacityCheck:    *enableDiskCapacityCheck,
 		VMSSCacheTTLInSeconds:      *vmssCacheTTLInSeconds,
 		VMType:                     *vmType,
-		ConstellationAddr:          *constellationAddr,
+		KMSAddr:                    *kmsAddr,
 	}
 	driver := azuredisk.NewDriver(&driverOptions)
 	if driver == nil {

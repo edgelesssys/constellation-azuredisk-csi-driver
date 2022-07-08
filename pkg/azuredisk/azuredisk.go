@@ -73,7 +73,7 @@ type DriverOptions struct {
 	EnableDiskCapacityCheck    bool
 	VMSSCacheTTLInSeconds      int64
 	VMType                     string
-	ConstellationAddr          string
+	KMSAddr                    string
 }
 
 // CSIDriver defines the interface for a CSI driver.
@@ -167,7 +167,7 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.evalSymLinks = filepath.EvalSymlinks
 	driver.getVolumeName = util.GetVolumeName
 	driver.cryptMapper = cryptmapper.New(
-		cryptKms.NewConstellationKMS(options.ConstellationAddr),
+		cryptKms.NewConstellationKMS(options.KMSAddr),
 		&cryptmapper.CryptDevice{},
 	)
 

@@ -37,7 +37,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/edgelesssys/constellation v1.0.1-0.20220519065628-2ba307dc13da
+require github.com/edgelesssys/constellation v1.3.0
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -66,7 +66,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7 // indirect
+	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/spf13/cobra v1.4.0 // indirect
+	github.com/spf13/cobra v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/contrib v0.20.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0 // indirect
@@ -150,5 +150,3 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0-alpha.4
 	sigs.k8s.io/cloud-provider-azure => sigs.k8s.io/cloud-provider-azure v0.7.4-0.20220517092534-f7e7f2df5e24
 )
-
-replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
