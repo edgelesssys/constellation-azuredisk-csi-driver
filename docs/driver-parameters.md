@@ -1,6 +1,6 @@
 # Driver Parameters
 
-`disk.csi.azure.com` driver parameters
+`azuredisk.csi.confidential.cloud` driver parameters
 
 ## Dynamic Provisioning
 
