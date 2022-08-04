@@ -3,6 +3,7 @@
 ## Prerequisites
 
 Create a docker-registry secret to configure pull access for the driver:
+
 ```shell
 kubectl create secret docker-registry regcred \
     --docker-server=DOCKER_REGISTRY_SERVER \
@@ -15,23 +16,26 @@ kubectl create secret docker-registry regcred \
 ## Deploying the driver
 
 Use `helm` to deploy the driver to your cluster:
+
 ```shell
 helm install azuredisk-csi-driver charts/edgeless/v1.3.0/azuredisk-csi-driver-v1.3.0.tgz \
     --namespace kube-system \
     --set linux.distro=fedora \
     --set controller.replicas=1
 ```
+
 See [helm configuration](../charts/README.md#V1-Parameters) for a detailed list on configuration options.
 
 Alternatively, you can also use `kubectl` to deploy the driver to the cluster:
+
 ```shell
 kubectl apply -f deploy/edgeless/v1.0.0
 ```
 
-
 ## Use
 
 Create a new storage class using the driver:
+
 ```shell
 cat <<EOF | kubectl apply -f -
 apiVersion: storage.k8s.io/v1
@@ -48,6 +52,7 @@ EOF
 ```
 
 Deploy a Pod with persistent volume claims:
+
 ```shell
 cat <<EOF | kubectl apply -f -
 kind: PersistentVolumeClaim
@@ -94,6 +99,7 @@ If you intend to provision large amounts of storage and Pod creation speed is im
 
 To enable integrity protection, create a storage class with an explicit file system type request and the integrity suffix.
 The following is a storage class for integrity protected `ext4` formatted disks:
+
 ```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -113,11 +119,13 @@ Please note that [volume expansion](https://kubernetes.io/blog/2018/07/12/resizi
 ## Cleanup
 
 Remove the driver using helm:
+
 ```shell
 helm uninstall azuredisk-csi-driver -n kube-system
 ```
 
 Remove the driver using kubectl:
+
 ```shell
 kubectl delete -f deploy/edgeless/
 ```

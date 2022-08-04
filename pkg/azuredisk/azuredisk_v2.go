@@ -23,13 +23,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"path/filepath"
 	"reflect"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/edgelesssys/constellation/mount/cryptmapper"
-	cryptKms "github.com/edgelesssys/constellation/mount/kms"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -80,14 +77,6 @@ func newDriverV2(options *DriverOptions) *DriverV2 {
 	driver.useCSIProxyGAInterface = options.UseCSIProxyGAInterface
 	driver.ioHandler = azureutils.NewOSIOHandler()
 	driver.hostUtil = hostutil.NewHostUtil()
-
-	// [Edgeless] set up dm-crypt
-	driver.evalSymLinks = filepath.EvalSymlinks
-	driver.getVolumeName = volumehelper.GetVolumeName
-	driver.cryptMapper = cryptmapper.New(
-		cryptKms.NewConstellationKMS(options.ConstellationAddr),
-		&cryptmapper.CryptDevice{},
-	)
 
 	topologyKey = fmt.Sprintf("topology.%s/zone", driver.Name)
 	return &driver
