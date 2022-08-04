@@ -10,14 +10,13 @@ ENV PATH ${PATH}:/usr/local/go/bin
 
 WORKDIR /azurediskplugin
 COPY pkg ./pkg
-COPY vendor ./vendor
 COPY go.mod ./go.mod
 COPY go.sum ./go.sum
 
 ARG ARCH
 ARG LDFLAGS
 ARG PLUGIN_NAME
-RUN CGO_ENABLED=1 GOOS=linux GOARCH="${ARCH}" go build -trimpath -a -ldflags "${LDFLAGS}" -mod vendor -o "/azurediskplugin/${PLUGIN_NAME}" ./pkg/azurediskplugin
+RUN CGO_ENABLED=1 GOOS=linux GOARCH="${ARCH}" go build -trimpath -a -ldflags "${LDFLAGS}" -o "/azurediskplugin/${PLUGIN_NAME}" ./pkg/azurediskplugin
 
 FROM scratch AS export
 ARG PLUGIN_NAME

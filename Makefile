@@ -152,7 +152,7 @@ azuredisk-v2:
 
 .PHONY: azuredisk-windows
 azuredisk-windows:
-	CGO_ENABLED=0 GOOS=windows go build -a -ldflags ${LDFLAGS} -mod vendor -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
+	CGO_ENABLED=0 GOOS=windows go build -a -ldflags ${LDFLAGS} -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
 
 .PHONY: azuredisk-windows-v2
 azuredisk-windows-v2:
@@ -160,7 +160,7 @@ azuredisk-windows-v2:
 
 .PHONY: azuredisk-darwin
 azuredisk-darwin:
-	CGO_ENABLED=0 GOOS=darwin go build -a -ldflags ${LDFLAGS} -mod vendor -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
+	CGO_ENABLED=0 GOOS=darwin go build -a -ldflags ${LDFLAGS} -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
 
 .PHONY: container
 container: azuredisk
