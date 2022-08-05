@@ -55,11 +55,11 @@ By default the CSI driver will transparently encrypt all disks staged on the nod
 Optionally, you can configure the driver to also apply integrity protection.
 
 Please note that enabling integrity protection requires wiping the disk before use.
-Disk wipe speeds are largely dependent on IOPS and performance tier of the disk.
+Disk wipe speeds are largely dependent on IOPS and the performance tier of the disk.
 If you intend to provision large amounts of storage and Pod creation speed is important,
-we recommend to request high performance disks or to not use this option.
+we recommend requesting high-performance disks.
 
-To enable integrity protection, create a storage class with an explicit file system type request and the integrity suffix.
+To enable integrity protection, create a storage class with an explicit file system type request and add the suffix `-integrity`.
 The following is a storage class for integrity protected `ext4` formatted disks:
 
 ```yaml
