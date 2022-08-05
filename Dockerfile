@@ -15,7 +15,7 @@
 FROM debian:bullseye AS build
 
 ENV DEBIAN_FRONTEND="noninteractive"
-RUN apt-get update && apt-get install -y build-essential wget pkg-config libcryptsetup12 libcryptsetup-dev
+RUN apt-get update && apt-get install -y build-essential git wget pkg-config libcryptsetup12 libcryptsetup-dev
 ARG GO_VER=1.18.2
 RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
