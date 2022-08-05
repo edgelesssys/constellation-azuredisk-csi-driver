@@ -1,4 +1,9 @@
 # Copyright 2017 The Kubernetes Authors.
+# Copyright Edgeless Systems GmbH
+#
+# NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
+# Changes are needed to enable the use of dm-crypt.
+# The original copyright notice is kept below.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -152,7 +157,7 @@ azuredisk-v2:
 
 .PHONY: azuredisk-windows
 azuredisk-windows:
-	CGO_ENABLED=0 GOOS=windows go build -a -ldflags ${LDFLAGS} -mod vendor -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
+	CGO_ENABLED=0 GOOS=windows go build -a -ldflags ${LDFLAGS} -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
 
 .PHONY: azuredisk-windows-v2
 azuredisk-windows-v2:
@@ -160,7 +165,7 @@ azuredisk-windows-v2:
 
 .PHONY: azuredisk-darwin
 azuredisk-darwin:
-	CGO_ENABLED=0 GOOS=darwin go build -a -ldflags ${LDFLAGS} -mod vendor -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
+	CGO_ENABLED=0 GOOS=darwin go build -a -ldflags ${LDFLAGS} -o _output/${ARCH}/${PLUGIN_NAME}.exe ./pkg/azurediskplugin
 
 .PHONY: container
 container: azuredisk
