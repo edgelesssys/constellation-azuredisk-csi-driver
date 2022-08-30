@@ -16,8 +16,7 @@ Please refer to [`azuredisk.csi.confidential.cloud` driver parameters](./docs/dr
 Use `helm` to deploy the driver to your cluster:
 
 ```shell
-chart_version="v1.3.0"
-helm install azuredisk-csi-driver charts/edgeless/${chart_version}/azuredisk-csi-driver-${chart_version}.tgz \
+helm install azuredisk-csi-driver charts/edgeless/latest/azuredisk-csi-driver.tgz \
     --namespace kube-system \
     --set linux.distro=fedora \
     --set controller.replicas=1
@@ -30,10 +29,6 @@ Remove the driver using helm:
 ```shell
 helm uninstall azuredisk-csi-driver -n kube-system
 ```
-
-## Examples
-
-- [Basic usage](./deploy/example/e2e_usage.md)
 
 ## Features
 
