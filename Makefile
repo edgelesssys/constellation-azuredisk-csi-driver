@@ -21,7 +21,7 @@ PKG = sigs.k8s.io/azuredisk-csi-driver
 GIT_COMMIT ?= $(shell git rev-parse HEAD)
 REGISTRY ?= ghcr.io/edgelesssys
 REGISTRY_NAME ?= $(shell echo $(REGISTRY) | sed "s/.azurecr.io//g")
-IMAGE_NAME ?= encrypting-azure-csi-driver
+IMAGE_NAME ?= constellation/azure-csi-driver
 ifneq ($(BUILD_V2), true)
 PLUGIN_NAME = azurediskplugin
 IMAGE_VERSION ?= v1.0.0

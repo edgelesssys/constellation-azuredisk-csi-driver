@@ -88,8 +88,8 @@ To build the driver container image:
 
 ```shell
 driver_version=v0.0.0-test
-make REGISTRY=ghcr.io/edgelesssys IMAGE_NAME=encrypting-azure-csi-driver IMAGE_VERSION=${driver_version} container
-docker push ghcr.io/edgelesssys/encrypting-azure-csi-driver:${driver_version}
+make REGISTRY=ghcr.io/edgelesssys IMAGE_NAME=constellation/azure-csi-driver IMAGE_VERSION=${driver_version} container
+docker push ghcr.io/edgelesssys/constellation/azure-csi-driver:${driver_version}
 ```
 
 ## Links

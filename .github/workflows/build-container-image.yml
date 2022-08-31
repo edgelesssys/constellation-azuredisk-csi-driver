@@ -40,7 +40,7 @@ jobs:
         uses: docker/setup-buildx-action@f211e3e9ded2d9377c8cadc4489a4e38014bc4c9
 
       - name: Build container image
-        run: make REGISTRY=ghcr.io/edgelesssys IMAGE_NAME=encrypting-azure-csi-driver IMAGE_VERSION=${{ env.pseudoVersion }} container
+        run: make REGISTRY=ghcr.io/edgelesssys IMAGE_NAME=constellation/azure-csi-driver IMAGE_VERSION=${{ env.pseudoVersion }} container
 
       - name: Log in to the Container registry
         id: docker-login
@@ -52,9 +52,9 @@ jobs:
 
       - name: Push container image
         run: |
-          docker push ghcr.io/edgelesssys/encrypting-azure-csi-driver:${{ env.pseudoVersion }}
+          docker push ghcr.io/edgelesssys/azure-csi-driver:${{ env.pseudoVersion }}
           if [ "${{ inputs.versionTag }}" != "" ]
           then
-            docker tag ghcr.io/edgelesssys/encrypting-azure-csi-driver:${{ env.pseudoVersion }} ghcr.io/edgelesssys/encrypting-azure-csi-driver:${{ inputs.versionTag }}
-            docker push ghcr.io/edgelesssys/encrypting-azure-csi-driver:${{ inputs.versionTag }}
+            docker tag ghcr.io/edgelesssys/constellation/azure-csi-driver:${{ env.pseudoVersion }} ghcr.io/edgelesssys/constellation/azure-csi-driver:${{ inputs.versionTag }}
+            docker push ghcr.io/edgelesssys/constellation/azure-csi-driver:${{ inputs.versionTag }}
           fi

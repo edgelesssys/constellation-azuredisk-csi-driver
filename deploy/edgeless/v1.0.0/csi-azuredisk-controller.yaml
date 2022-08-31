@@ -128,7 +128,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: azuredisk
-          image: ghcr.io/edgelesssys/encrypting-azure-csi-driver:v1.0.0
+          image: ghcr.io/edgelesssys/azure-csi-driver:v1.0.0
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
