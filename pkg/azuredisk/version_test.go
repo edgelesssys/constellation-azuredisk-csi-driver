@@ -38,7 +38,7 @@ func TestGetVersion(t *testing.T) {
 		GoVersion:     runtime.Version(),
 		Compiler:      runtime.Compiler,
 		Platform:      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-		TopologyKey:   "N/A",
+		TopologyKey:   fmt.Sprintf("topology.%s/zone", consts.DefaultDriverName),
 	}
 
 	if !reflect.DeepEqual(version, expected) {
@@ -74,7 +74,7 @@ func TestGetUserAgent(t *testing.T) {
 			driverName:      "",
 			customUserAgent: "",
 			userAgentSuffix: "",
-			expectedResult:  fmt.Sprintf("%s/%s %s/%s (%s-%s)", "", driverVersion, runtime.Compiler, runtime.Version(), runtime.GOARCH, runtime.GOOS),
+			expectedResult:  fmt.Sprintf("%s/%s", "", driverVersion),
 		},
 		{
 			driverName:      "",
@@ -86,7 +86,7 @@ func TestGetUserAgent(t *testing.T) {
 			driverName:      "drivername",
 			customUserAgent: "",
 			userAgentSuffix: "suffix",
-			expectedResult:  fmt.Sprintf("%s/%s %s/%s (%s-%s) suffix", "drivername", driverVersion, runtime.Compiler, runtime.Version(), runtime.GOARCH, runtime.GOOS),
+			expectedResult:  fmt.Sprintf("%s/%s suffix", "drivername", driverVersion),
 		},
 	}
 
