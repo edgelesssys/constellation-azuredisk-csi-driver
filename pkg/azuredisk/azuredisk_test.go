@@ -34,6 +34,16 @@ import (
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 )
 
+func TestNewDriverV1(t *testing.T) {
+	d := newDriverV1(&DriverOptions{
+		NodeID:                 os.Getenv("nodeid"),
+		DriverName:             consts.DefaultDriverName,
+		VolumeAttachLimit:      16,
+		EnablePerfOptimization: false,
+	})
+	assert.NotNil(t, d)
+}
+
 func TestCheckDiskCapacity(t *testing.T) {
 	d, _ := NewFakeDriver(t)
 	size := int32(10)
@@ -122,6 +132,39 @@ func TestRun(t *testing.T) {
 				d.Run("tcp://127.0.0.1:0", "", true, true)
 			},
 		},
+		{
+			name: "Successful run with vmss VMType",
+			testFunc: func(t *testing.T) {
+				if err := ioutil.WriteFile(fakeCredFile, []byte(fakeCredContent), 0666); err != nil {
+					t.Error(err)
+				}
+
+				defer func() {
+					if err := os.Remove(fakeCredFile); err != nil {
+						t.Error(err)
+					}
+				}()
+
+				originalCredFile, ok := os.LookupEnv(consts.DefaultAzureCredentialFileEnv)
+				if ok {
+					defer os.Setenv(consts.DefaultAzureCredentialFileEnv, originalCredFile)
+				} else {
+					defer os.Unsetenv(consts.DefaultAzureCredentialFileEnv)
+				}
+				os.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
+
+				d := newDriverV1(&DriverOptions{
+					NodeID:                 "",
+					DriverName:             consts.DefaultDriverName,
+					EnableListVolumes:      true,
+					EnableListSnapshots:    true,
+					EnablePerfOptimization: true,
+					VMSSCacheTTLInSeconds:  10,
+					VMType:                 "vmss",
+				})
+				d.Run("tcp://127.0.0.1:0", "", true, true)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -152,6 +195,68 @@ func TestGetNodeInfoFromLabels(t *testing.T) {
 		_, _, err := getNodeInfoFromLabels(context.TODO(), test.nodeName, test.kubeClient)
 		if !reflect.DeepEqual(err, test.expectedError) {
 			t.Errorf("Unexpected result: %v, expected result: %v", err, test.expectedError)
+		}
+	}
+}
+
+func TestGetDefaultDiskIOPSReadWrite(t *testing.T) {
+	tests := []struct {
+		requestGiB int
+		expected   int
+	}{
+		{
+			requestGiB: 1,
+			expected:   500,
+		},
+		{
+			requestGiB: 512,
+			expected:   512,
+		},
+		{
+			requestGiB: 51200000,
+			expected:   160000,
+		},
+	}
+
+	for _, test := range tests {
+		result := getDefaultDiskIOPSReadWrite(test.requestGiB)
+		if result != test.expected {
+			t.Errorf("Unexpected result: %v, expected result: %v, input: %d", result, test.expected, test.requestGiB)
+		}
+	}
+}
+
+func TestGetDefaultDiskMBPSReadWrite(t *testing.T) {
+	tests := []struct {
+		requestGiB int
+		expected   int
+	}{
+		{
+			requestGiB: 1,
+			expected:   100,
+		},
+		{
+			requestGiB: 512,
+			expected:   100,
+		},
+		{
+			requestGiB: 51200,
+			expected:   200,
+		},
+		{
+			requestGiB: 51200000,
+			expected:   625,
+		},
+		{
+			requestGiB: 512000000,
+			expected:   625,
+		},
+	}
+
+	for _, test := range tests {
+		result := getDefaultDiskMBPSReadWrite(test.requestGiB)
+		if result != test.expected {
+			t.Errorf("Unexpected result: %v, expected result: %v, input: %d", result, test.expected, test.requestGiB)
 		}
 	}
 }
