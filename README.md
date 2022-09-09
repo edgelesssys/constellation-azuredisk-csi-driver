@@ -1,5 +1,7 @@
 # Azure Disk CSI driver for Constellation Kubernetes
 
+This is a fork of the Azure CSI driver with added encryption features for Constellation.
+
 - [Upstream source](https://github.com/kubernetes-sigs/azuredisk-csi-driver)
 - [Constellation repo](https://github.com/edgelesssys/constellation)
 
@@ -96,3 +98,7 @@ docker push ghcr.io/edgelesssys/constellation/azure-csi-driver:${driver_version}
 
 - [Kubernetes CSI Documentation](https://kubernetes-csi.github.io/docs/)
 - [Container Storage Interface (CSI) Specification](https://github.com/container-storage-interface/spec)
+
+## License
+
+This project is licensed under the [AGPLv3](LICENSE). It's based on code licensed under the [Apache 2.0 license](LICENSE.Apache).
