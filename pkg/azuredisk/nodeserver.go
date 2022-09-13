@@ -49,7 +49,7 @@ import (
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/edgelesssys/constellation/mount/cryptmapper"
+	"github.com/edgelesssys/constellation/csi/cryptmapper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -77,7 +77,7 @@ func getDefaultFsType() string {
 }
 
 // NodeStageVolume mount disk device to a staging path
-func (d *Driver) NodeStageVolume(_ context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
 	diskURI := req.GetVolumeId()
 	if len(diskURI) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")

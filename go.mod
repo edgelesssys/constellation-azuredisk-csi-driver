@@ -45,7 +45,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require github.com/edgelesssys/constellation v0.0.1-0.20220830131551-778952e07c25
+require github.com/edgelesssys/constellation v0.0.1-0.20220913080851-a318a8296881
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1 // indirect

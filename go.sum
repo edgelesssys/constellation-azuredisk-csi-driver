@@ -730,8 +730,8 @@ github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
-github.com/edgelesssys/constellation v0.0.1-0.20220830131551-778952e07c25 h1:ZgP0HLFPs+QOt5/YyMLu161NjnI79LYb2VjqSOYF4Jo=
-github.com/edgelesssys/constellation v0.0.1-0.20220830131551-778952e07c25/go.mod h1:/+5ljZYBJJFsV9bhmW6pwYhYeJjAtQWDC4y25Em/CUE=
+github.com/edgelesssys/constellation v0.0.1-0.20220913080851-a318a8296881 h1:WIySPrvssquyRvQTmGaU76xE1CYVx/crvQGDMn6ZKDc=
+github.com/edgelesssys/constellation v0.0.1-0.20220913080851-a318a8296881/go.mod h1:/yfeKDk9LmXnsIip9XvgOTsT5luagwviRY6qE++yzME=
 github.com/emicklei/go-restful/v3 v3.8.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=
 github.com/emicklei/go-restful/v3 v3.11.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
