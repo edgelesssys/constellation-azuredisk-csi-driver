@@ -1,10 +1,23 @@
 /*
-Copyright 2017 The Kubernetes Authors.
-Copyright Edgeless Systems GmbH
+Copyright (c) Edgeless Systems GmbH
 
-NOTE: This file is a modified version from the one of the azuredisk-csi-driver project.
-Changes are needed to enable the use of dm-crypt.
-The original copyright notice is kept below.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This file incorporates work covered by the following copyright and
+permission notice:
+
+
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,7 +49,7 @@ import (
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/edgelesssys/constellation/mount/cryptmapper"
+	"github.com/edgelesssys/constellation/csi/cryptmapper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

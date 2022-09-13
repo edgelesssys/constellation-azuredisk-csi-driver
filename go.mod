@@ -21,7 +21,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pelletier/go-toml v1.9.4
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e
+	golang.org/x/net v0.0.0-20220909164309-bea034e7d591
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.0
 	k8s.io/api v0.24.3
@@ -37,7 +37,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/edgelesssys/constellation v0.0.1-0.20220830131551-778952e07c25
+require github.com/edgelesssys/constellation v0.0.1-0.20220913080851-a318a8296881
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -94,7 +94,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
@@ -107,7 +107,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.24.3 // indirect
 	k8s.io/apiserver v0.24.3 // indirect
 	k8s.io/component-helpers v0.24.3 // indirect
-	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
+	k8s.io/kube-openapi v0.0.0-20220627174259-011e075b9cb8 // indirect
 	k8s.io/kubectl v0.24.2 // indirect
 	k8s.io/kubelet v0.24.3 // indirect
 	k8s.io/pod-security-admission v0.0.0 // indirect
