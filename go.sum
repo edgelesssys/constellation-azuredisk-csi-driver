@@ -185,8 +185,8 @@ github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5Xh
 github.com/docker/go-units v0.4.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
-github.com/edgelesssys/constellation v0.0.1-0.20220830131551-778952e07c25 h1:ZgP0HLFPs+QOt5/YyMLu161NjnI79LYb2VjqSOYF4Jo=
-github.com/edgelesssys/constellation v0.0.1-0.20220830131551-778952e07c25/go.mod h1:/+5ljZYBJJFsV9bhmW6pwYhYeJjAtQWDC4y25Em/CUE=
+github.com/edgelesssys/constellation v0.0.1-0.20220913080851-a318a8296881 h1:WIySPrvssquyRvQTmGaU76xE1CYVx/crvQGDMn6ZKDc=
+github.com/edgelesssys/constellation v0.0.1-0.20220913080851-a318a8296881/go.mod h1:/yfeKDk9LmXnsIip9XvgOTsT5luagwviRY6qE++yzME=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153 h1:yUdfgN0XgIJw7foRItutHYUIhlcKzcSf5vDpdhQAKTc=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
@@ -1178,8 +1178,9 @@ k8s.io/kube-aggregator v0.24.0-alpha.4/go.mod h1:7nwYGSQBojWlbi1/lu0ZYTjPPNd4oNx
 k8s.io/kube-controller-manager v0.24.0-alpha.4/go.mod h1:QUf8afLMPHXhYI2ZZvHuyhI0qwX3E0Pgg4/81afNPz8=
 k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e/go.mod h1:vHXdDvt9+2spS2Rx9ql3I8tycm3H9FDfdUoIuKCefvw=
 k8s.io/kube-openapi v0.0.0-20220316025549-ddc66922ab18/go.mod h1:p8bjuqy9+BWvBDEBjdeVYtX6kMWWg6OhY1V1jhC9MPI=
-k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 h1:Gii5eqf+GmIEwGNKQYQClCayuJCe2/4fZUvF7VG99sU=
 k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42/go.mod h1:Z/45zLw8lUo4wdiUkI+v/ImEGAvu3WatcZl3lPMR4Rk=
+k8s.io/kube-openapi v0.0.0-20220627174259-011e075b9cb8 h1:yEQKdMCjzAOvGeiTwG4hO/hNVNtDOuUFvMUZ0OlaIzs=
+k8s.io/kube-openapi v0.0.0-20220627174259-011e075b9cb8/go.mod h1:mbJ+NSUoAhuR14N0S63bPkh8MGVSo3VYSGZtH/mfMe0=
 k8s.io/kube-proxy v0.24.0-alpha.4/go.mod h1:ctAM/zNSWOUKD/1ctdAuH63bsnqypebAd3YoiAdSrt0=
 k8s.io/kube-scheduler v0.24.0-alpha.4/go.mod h1:2/+E5sR8aCM1RTBXYeQZ1aC6Z/2yX2kcNF61+Gkb/a4=
 k8s.io/kubectl v0.24.0-alpha.4 h1:ESGSuMjKMQCvNF176uUd2w5KGV3bRK0tIqWAQB/NFWc=
