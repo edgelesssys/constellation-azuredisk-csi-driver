@@ -1,1 +1,1 @@
-../../../../v1.19.0/azuredisk-csi-driver/templates/_helpers.tpl
+../../../../v1.22.0/azuredisk-csi-driver/templates/_helpers.tpl
