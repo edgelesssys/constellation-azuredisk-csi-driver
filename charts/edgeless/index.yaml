@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   azuredisk-csi-driver:
   - apiVersion: v1
+    appVersion: v1.0.1
+    created: "2022-10-20T13:02:12.112104+02:00"
+    description: Azure disk Container Storage Interface (CSI) Storage Plugin with
+      on-node encryption support
+    digest: 084ec1e7497a1c38d373f7aa70e744970a484917bb340613f66ed55bc00d9cdb
+    name: azuredisk-csi-driver
+    urls:
+    - v1.0.1/azuredisk-csi-driver.tgz
+    version: v1.0.1
+  - apiVersion: v1
     appVersion: v1.0.0
     created: "2022-09-28T11:13:35.77182202+02:00"
     description: Azure disk Container Storage Interface (CSI) Storage Plugin with
@@ -11,4 +21,4 @@ entries:
     urls:
     - v1.0.0/azuredisk-csi-driver.tgz
     version: v1.0.0
-generated: "2022-09-28T11:13:35.770299627+02:00"
+generated: "2022-10-20T13:02:12.109507+02:00"
