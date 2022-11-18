@@ -159,7 +159,7 @@ linux:
   enabled: true
   dsName: csi-azuredisk-node # daemonset name
   kubelet: /var/lib/kubelet
-  distro: debian # available values: debian, fedora
+  distro: fedora # available values: debian, fedora
   enablePerfOptimization: true
   tolerations:
     - operator: "Exists"
