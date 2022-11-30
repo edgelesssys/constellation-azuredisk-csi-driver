@@ -2,7 +2,7 @@ image:
   baseRepo: mcr.microsoft.com
   azuredisk:
     repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
-    tag: v1.0.0
+    tag: v1.0.1
     pullPolicy: IfNotPresent
   csiProvisioner:
     repository: /oss/kubernetes-csi/csi-provisioner
@@ -40,11 +40,11 @@ controller:
   cloudConfigSecretName: azureconfig
   cloudConfigSecretNamespace: kube-system
   allowEmptyCloudConfig: false
-  replicas: 2
+  replicas: 1
   metricsPort: 29604
   livenessProbe:
     healthPort: 29602
-  runOnMaster: true
+  runOnMaster: false
   runOnControlPlane: true
   disableAvailabilitySetNodes: false
   vmType: ""
@@ -62,6 +62,12 @@ controller:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
       effect: "NoSchedule"
+    - key: "node.cloudprovider.kubernetes.io/uninitialized"
+      effect: NoSchedule
+      operator: Exists
+    - key: "node.kubernetes.io/not-ready"
+      effect: NoSchedule
+      operator: Exists
   podLabels: {}
   resources:
     csiProvisioner:
@@ -111,7 +117,8 @@ node:
   logLevel: 5
   livenessProbe:
     healthPort: 29603
-  kmsAddr: kms.kube-system:9000
+  kmsPort: "9000"
+  kmsNamespace: "kube-system"
 
 snapshot:
   enabled: false
@@ -152,7 +159,7 @@ linux:
   enabled: true
   dsName: csi-azuredisk-node # daemonset name
   kubelet: /var/lib/kubelet
-  distro: debian # available values: debian, fedora
+  distro: fedora # available values: debian, fedora
   enablePerfOptimization: true
   tolerations:
     - operator: "Exists"
@@ -187,6 +194,8 @@ linux:
         memory: 20Mi
 
 cloud: AzurePublicCloud
+
+createStorageClass: true
 
 ## Reference to one or more secrets to be used when pulling images
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
