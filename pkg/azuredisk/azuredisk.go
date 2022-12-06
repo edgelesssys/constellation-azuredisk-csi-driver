@@ -46,8 +46,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
-	"github.com/edgelesssys/constellation/csi/cryptmapper"
-	cryptKms "github.com/edgelesssys/constellation/csi/kms"
+	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/v2/csi/kms"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
