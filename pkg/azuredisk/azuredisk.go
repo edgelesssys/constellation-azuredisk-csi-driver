@@ -48,8 +48,8 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
-	"github.com/edgelesssys/constellation/csi/cryptmapper"
-	cryptKms "github.com/edgelesssys/constellation/csi/kms"
+	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/v2/csi/kms"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
