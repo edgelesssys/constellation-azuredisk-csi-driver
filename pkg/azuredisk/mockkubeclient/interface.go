@@ -723,3 +723,17 @@ func (mr *MockInterfaceMockRecorder) StorageV1alpha1() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StorageV1alpha1", reflect.TypeOf((*MockInterface)(nil).StorageV1alpha1))
 }
+
+// NetworkingV1alpha1 mocks base method
+func (m *MockInterface) NetworkingV1alpha1() v1alpha1X.NetworkingV1alpha1Interface {
+    m.ctrl.T.Helper()
+    ret := m.ctrl.Call(m, "NetworkingV1alpha1")
+    ret0, _ := ret[0].(v1alpha1X.NetworkingV1alpha1Interface)
+    return ret0
+}
+
+// NetworkingV1alpha1 indicates an expected call of NetworkingV1alpha1
+func (mr *MockInterfaceMockRecorder) NetworkingV1alpha1() *gomock.Call {
+    mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NetworkingV1alpga1", reflect.TypeOf((*MockInterface)(nil).NetworkingV1alpha1))
+}
