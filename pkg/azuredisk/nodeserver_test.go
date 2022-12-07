@@ -47,7 +47,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +80,7 @@ var (
 
 	testVMName     = fakeNodeID
 	testVMURI      = fmt.Sprintf(virtualMachineURIFormat, testSubscription, testResourceGroup, testVMName)
-	testVMSize     = compute.VirtualMachineSizeTypesStandardD3V2
+	testVMSize     = compute.StandardD3V2
 	testVMLocation = "westus"
 	testVMZones    = []string{"1"}
 	testVM         = compute.VirtualMachine{
@@ -579,7 +579,7 @@ func TestNodeStageVolume(t *testing.T) {
 					DiskSupportsPerfOptimization(gomock.Any(), gomock.Any()).
 					Return(true)
 				mockoptimization.EXPECT().
-					OptimizeDiskPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					OptimizeDiskPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).
 					After(diskSupportsPerfOptimizationCall)
 
@@ -607,7 +607,7 @@ func TestNodeStageVolume(t *testing.T) {
 					DiskSupportsPerfOptimization(gomock.Any(), gomock.Any()).
 					Return(true)
 				mockoptimization.EXPECT().
-					OptimizeDiskPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					OptimizeDiskPerformance(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(fmt.Errorf("failed to optimize device performance")).
 					After(diskSupportsPerfOptimizationCall)
 

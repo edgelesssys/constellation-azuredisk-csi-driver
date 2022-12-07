@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,16 +34,15 @@ func GenerateCSISnapshot(sourceVolumeID string, snapshot *compute.Snapshot) (*cs
 		return nil, fmt.Errorf("snapshot property is nil")
 	}
 
-	tp := timestamppb.New(snapshot.SnapshotProperties.TimeCreated.ToTime())
-	if tp == nil {
-		return nil, fmt.Errorf("failed to convert timestamp(%v)", snapshot.SnapshotProperties.TimeCreated.ToTime())
+	if snapshot.SnapshotProperties.TimeCreated == nil {
+		return nil, fmt.Errorf("TimeCreated of snapshot property is nil")
 	}
-	ready, _ := isCSISnapshotReady(*snapshot.SnapshotProperties.ProvisioningState)
 
 	if snapshot.SnapshotProperties.DiskSizeGB == nil {
 		return nil, fmt.Errorf("diskSizeGB of snapshot property is nil")
 	}
 
+	ready, _ := isCSISnapshotReady(*snapshot.SnapshotProperties.ProvisioningState)
 	if sourceVolumeID == "" {
 		sourceVolumeID = GetSourceVolumeID(snapshot)
 	}
@@ -52,7 +51,7 @@ func GenerateCSISnapshot(sourceVolumeID string, snapshot *compute.Snapshot) (*cs
 		SizeBytes:      volumehelper.GiBToBytes(int64(*snapshot.SnapshotProperties.DiskSizeGB)),
 		SnapshotId:     *snapshot.ID,
 		SourceVolumeId: sourceVolumeID,
-		CreationTime:   tp,
+		CreationTime:   timestamppb.New(snapshot.SnapshotProperties.TimeCreated.ToTime()),
 		ReadyToUse:     ready,
 	}, nil
 }

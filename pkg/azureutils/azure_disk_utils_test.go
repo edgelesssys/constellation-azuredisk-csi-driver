@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/assert"
@@ -363,13 +363,7 @@ users:
 				os.Remove(fakeCredFile)
 			}()
 
-			originalCredFile, ok := os.LookupEnv(consts.DefaultAzureCredentialFileEnv)
-			if ok {
-				defer os.Setenv(consts.DefaultAzureCredentialFileEnv, originalCredFile)
-			} else {
-				defer os.Unsetenv(consts.DefaultAzureCredentialFileEnv)
-			}
-			os.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
+			t.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
 		}
 		if test.createFakeKubeConfig {
 			if err := createTestFile(fakeKubeConfig); err != nil {
@@ -603,7 +597,7 @@ func TestGetResourceGroupFromURI(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			// case insentive check
+			// case insensitive check
 			diskURL:        "/subscriptions/4be8920b-2978-43d7-axyz-04d8549c1d05/resourcegroups/azure-k8s1102/providers/Microsoft.Compute/disks/andy-mghyb1102-dynamic-pvc-f7f014c9-49f4-11e8-ab5c-000d3af7b38e",
 			expectedResult: "azure-k8s1102",
 			expectError:    false,
@@ -700,7 +694,7 @@ func TestGetValidCreationData(t *testing.T) {
 			sourceResourceID: "",
 			sourceType:       "",
 			expected1: compute.CreationData{
-				CreateOption: compute.DiskCreateOptionEmpty,
+				CreateOption: compute.Empty,
 			},
 			expected2: nil,
 		},
@@ -710,7 +704,7 @@ func TestGetValidCreationData(t *testing.T) {
 			sourceResourceID: "/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.Compute/snapshots/xxx",
 			sourceType:       consts.SourceSnapshot,
 			expected1: compute.CreationData{
-				CreateOption:     compute.DiskCreateOptionCopy,
+				CreateOption:     compute.Copy,
 				SourceResourceID: &sourceResourceSnapshotID,
 			},
 			expected2: nil,
@@ -721,7 +715,7 @@ func TestGetValidCreationData(t *testing.T) {
 			sourceResourceID: "xxx",
 			sourceType:       consts.SourceSnapshot,
 			expected1: compute.CreationData{
-				CreateOption:     compute.DiskCreateOptionCopy,
+				CreateOption:     compute.Copy,
 				SourceResourceID: &sourceResourceSnapshotID,
 			},
 			expected2: nil,
@@ -764,7 +758,7 @@ func TestGetValidCreationData(t *testing.T) {
 			sourceResourceID: "xxx",
 			sourceType:       "",
 			expected1: compute.CreationData{
-				CreateOption: compute.DiskCreateOptionEmpty,
+				CreateOption: compute.Empty,
 			},
 			expected2: nil,
 		},
@@ -774,7 +768,7 @@ func TestGetValidCreationData(t *testing.T) {
 			sourceResourceID: "/subscriptions/xxx/resourceGroups/xxx/providers/Microsoft.Compute/disks/xxx",
 			sourceType:       consts.SourceVolume,
 			expected1: compute.CreationData{
-				CreateOption:     compute.DiskCreateOptionCopy,
+				CreateOption:     compute.Copy,
 				SourceResourceID: &sourceResourceVolumeID,
 			},
 			expected2: nil,
@@ -785,7 +779,7 @@ func TestGetValidCreationData(t *testing.T) {
 			sourceResourceID: "xxx",
 			sourceType:       consts.SourceVolume,
 			expected1: compute.CreationData{
-				CreateOption:     compute.DiskCreateOptionCopy,
+				CreateOption:     compute.Copy,
 				SourceResourceID: &sourceResourceVolumeID,
 			},
 			expected2: nil,
@@ -908,20 +902,24 @@ func TestIsARMResourceID(t *testing.T) {
 }
 
 func TestIsAvailabilityZone(t *testing.T) {
-	region := "eastus"
 	tests := []struct {
 		desc     string
 		zone     string
+		region   string
 		expected bool
 	}{
-		{"empty string should return false", "", false},
-		{"wrong farmat should return false", "123", false},
-		{"wrong location should return false", "chinanorth-1", false},
-		{"correct zone should return true", "eastus-1", true},
+		{"empty string should return false", "", "eastus", false},
+		{"wrong farmat should return false", "123", "eastus", false},
+		{"wrong location should return false", "chinanorth-1", "eastus", false},
+		{"correct zone should return true", "eastus-1", "eastus", true},
+		{"empty location should return true", "eastus-1", "", true},
+		{"empty location with fault domain should return false", "1", "", false},
+		{"empty location with wrong format should return false", "-1", "", false},
+		{"empty location with wrong format should return false", "eastus-", "", false},
 	}
 
 	for _, test := range tests {
-		actual := IsValidAvailabilityZone(test.zone, region)
+		actual := IsValidAvailabilityZone(test.zone, test.region)
 		if actual != test.expected {
 			t.Errorf("test [%q] get unexpected result: %v != %v", test.desc, actual, test.expected)
 		}
@@ -1236,22 +1234,22 @@ func TestNormalizeNetworkAccessPolicy(t *testing.T) {
 	}{
 		{
 			networkAccessPolicy:         "",
-			expectedNetworkAccessPolicy: compute.NetworkAccessPolicyAllowAll,
+			expectedNetworkAccessPolicy: compute.AllowAll,
 			expectError:                 false,
 		},
 		{
 			networkAccessPolicy:         "AllowAll",
-			expectedNetworkAccessPolicy: compute.NetworkAccessPolicyAllowAll,
+			expectedNetworkAccessPolicy: compute.AllowAll,
 			expectError:                 false,
 		},
 		{
 			networkAccessPolicy:         "DenyAll",
-			expectedNetworkAccessPolicy: compute.NetworkAccessPolicyDenyAll,
+			expectedNetworkAccessPolicy: compute.DenyAll,
 			expectError:                 false,
 		},
 		{
 			networkAccessPolicy:         "AllowPrivate",
-			expectedNetworkAccessPolicy: compute.NetworkAccessPolicyAllowPrivate,
+			expectedNetworkAccessPolicy: compute.AllowPrivate,
 			expectError:                 false,
 		},
 		{
@@ -1285,14 +1283,14 @@ func TestNormalizeStorageAccountType(t *testing.T) {
 			cloud:                  azurePublicCloud,
 			storageAccountType:     "",
 			disableAzureStackCloud: false,
-			expectedAccountType:    compute.DiskStorageAccountTypesStandardSSDLRS,
+			expectedAccountType:    compute.StandardSSDLRS,
 			expectError:            false,
 		},
 		{
 			cloud:                  azureStackCloud,
 			storageAccountType:     "",
 			disableAzureStackCloud: false,
-			expectedAccountType:    compute.DiskStorageAccountTypesStandardLRS,
+			expectedAccountType:    compute.StandardLRS,
 			expectError:            false,
 		},
 		{
@@ -1306,28 +1304,28 @@ func TestNormalizeStorageAccountType(t *testing.T) {
 			cloud:                  azurePublicCloud,
 			storageAccountType:     "Standard_LRS",
 			disableAzureStackCloud: false,
-			expectedAccountType:    compute.DiskStorageAccountTypesStandardLRS,
+			expectedAccountType:    compute.StandardLRS,
 			expectError:            false,
 		},
 		{
 			cloud:                  azurePublicCloud,
 			storageAccountType:     "Premium_LRS",
 			disableAzureStackCloud: false,
-			expectedAccountType:    compute.DiskStorageAccountTypesPremiumLRS,
+			expectedAccountType:    compute.PremiumLRS,
 			expectError:            false,
 		},
 		{
 			cloud:                  azurePublicCloud,
 			storageAccountType:     "StandardSSD_LRS",
 			disableAzureStackCloud: false,
-			expectedAccountType:    compute.DiskStorageAccountTypesStandardSSDLRS,
+			expectedAccountType:    compute.StandardSSDLRS,
 			expectError:            false,
 		},
 		{
 			cloud:                  azurePublicCloud,
 			storageAccountType:     "UltraSSD_LRS",
 			disableAzureStackCloud: false,
-			expectedAccountType:    compute.DiskStorageAccountTypesUltraSSDLRS,
+			expectedAccountType:    compute.UltraSSDLRS,
 			expectError:            false,
 		},
 		{
@@ -1341,7 +1339,7 @@ func TestNormalizeStorageAccountType(t *testing.T) {
 			cloud:                  azureStackCloud,
 			storageAccountType:     "UltraSSD_LRS",
 			disableAzureStackCloud: true,
-			expectedAccountType:    compute.DiskStorageAccountTypesUltraSSDLRS,
+			expectedAccountType:    compute.UltraSSDLRS,
 			expectError:            false,
 		},
 	}
@@ -1364,9 +1362,10 @@ func TestParseDiskParameters(t *testing.T) {
 			name:        "nil disk parameters",
 			inputParams: nil,
 			expectedOutput: ManagedDiskParameters{
-				Incremental:   true,
-				Tags:          make(map[string]string),
-				VolumeContext: make(map[string]string),
+				Incremental:    true,
+				Tags:           make(map[string]string),
+				VolumeContext:  make(map[string]string),
+				DeviceSettings: make(map[string]string),
 			},
 			expectedError: nil,
 		},
@@ -1374,9 +1373,10 @@ func TestParseDiskParameters(t *testing.T) {
 			name:        "invalid field in parameters",
 			inputParams: map[string]string{"invalidField": "someValue"},
 			expectedOutput: ManagedDiskParameters{
-				Incremental:   true,
-				Tags:          make(map[string]string),
-				VolumeContext: map[string]string{"invalidField": "someValue"},
+				Incremental:    true,
+				Tags:           make(map[string]string),
+				VolumeContext:  map[string]string{"invalidField": "someValue"},
+				DeviceSettings: make(map[string]string),
 			},
 			expectedError: fmt.Errorf("invalid parameter %s in storage class", "invalidField"),
 		},
@@ -1384,9 +1384,10 @@ func TestParseDiskParameters(t *testing.T) {
 			name:        "invalid value in parameters",
 			inputParams: map[string]string{consts.LogicalSectorSizeField: "invalidValue"},
 			expectedOutput: ManagedDiskParameters{
-				Incremental:   true,
-				Tags:          make(map[string]string),
-				VolumeContext: map[string]string{consts.LogicalSectorSizeField: "invalidValue"},
+				Incremental:    true,
+				Tags:           make(map[string]string),
+				VolumeContext:  map[string]string{consts.LogicalSectorSizeField: "invalidValue"},
+				DeviceSettings: make(map[string]string),
 			},
 			expectedError: fmt.Errorf("parse invalidValue failed with error: strconv.Atoi: parsing \"invalidValue\": invalid syntax"),
 		},
@@ -1470,6 +1471,7 @@ func TestParseDiskParameters(t *testing.T) {
 					consts.IncrementalField:         "false",
 					consts.ZonedField:               "ignored",
 				},
+				DeviceSettings:    make(map[string]string),
 				MaxShares:         1,
 				LogicalSectorSize: 1,
 			},
@@ -1641,17 +1643,17 @@ func TestInsertDiskProperties(t *testing.T) {
 		{
 			desc: "skuName",
 			disk: &compute.Disk{
-				Sku: &compute.DiskSku{Name: compute.DiskStorageAccountTypesPremiumLRS},
+				Sku: &compute.DiskSku{Name: compute.PremiumLRS},
 			},
 			inputMap:    map[string]string{},
-			expectedMap: map[string]string{"skuname": string(compute.DiskStorageAccountTypesPremiumLRS)},
+			expectedMap: map[string]string{"skuname": string(compute.PremiumLRS)},
 		},
 		{
 			desc: "DiskProperties",
 			disk: &compute.Disk{
-				Sku: &compute.DiskSku{Name: compute.DiskStorageAccountTypesStandardSSDLRS},
+				Sku: &compute.DiskSku{Name: compute.StandardSSDLRS},
 				DiskProperties: &compute.DiskProperties{
-					NetworkAccessPolicy: compute.NetworkAccessPolicyAllowPrivate,
+					NetworkAccessPolicy: compute.AllowPrivate,
 					DiskIOPSReadWrite:   to.Int64Ptr(6400),
 					DiskMBpsReadWrite:   to.Int64Ptr(100),
 					CreationData: &compute.CreationData{
@@ -1663,8 +1665,8 @@ func TestInsertDiskProperties(t *testing.T) {
 			},
 			inputMap: map[string]string{},
 			expectedMap: map[string]string{
-				consts.SkuNameField:             string(compute.DiskStorageAccountTypesStandardSSDLRS),
-				consts.NetworkAccessPolicyField: string(compute.NetworkAccessPolicyAllowPrivate),
+				consts.SkuNameField:             string(compute.StandardSSDLRS),
+				consts.NetworkAccessPolicyField: string(compute.AllowPrivate),
 				consts.DiskIOPSReadWriteField:   "6400",
 				consts.DiskMBPSReadWriteField:   "100",
 				consts.LogicalSectorSizeField:   "512",
