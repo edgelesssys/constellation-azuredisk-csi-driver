@@ -1,10 +1,10 @@
 name: Static Checks
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-  pull_request:
+  # push:
+  #   branches:
+  #     - master
+  # pull_request:
 jobs:
   go_lint:
     name: Go Lint
