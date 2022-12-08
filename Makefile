@@ -37,7 +37,7 @@ REGISTRY_NAME ?= $(shell echo $(REGISTRY) | sed "s/.azurecr.io//g")
 IMAGE_NAME ?= constellation/azure-csi-driver
 ifneq ($(BUILD_V2), true)
 PLUGIN_NAME = azurediskplugin
-IMAGE_VERSION ?= v1.0.0
+IMAGE_VERSION ?= v1.1.0
 CHART_VERSION ?= latest
 else
 PLUGIN_NAME = azurediskpluginv2
