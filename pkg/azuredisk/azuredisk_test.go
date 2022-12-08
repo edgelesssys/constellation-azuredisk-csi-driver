@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
@@ -93,13 +93,7 @@ func TestRun(t *testing.T) {
 					}
 				}()
 
-				originalCredFile, ok := os.LookupEnv(consts.DefaultAzureCredentialFileEnv)
-				if ok {
-					defer os.Setenv(consts.DefaultAzureCredentialFileEnv, originalCredFile)
-				} else {
-					defer os.Unsetenv(consts.DefaultAzureCredentialFileEnv)
-				}
-				os.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
+				t.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
 
 				d, _ := NewFakeDriver(t)
 				d.Run("tcp://127.0.0.1:0", "", true, true)
@@ -118,13 +112,7 @@ func TestRun(t *testing.T) {
 					}
 				}()
 
-				originalCredFile, ok := os.LookupEnv(consts.DefaultAzureCredentialFileEnv)
-				if ok {
-					defer os.Setenv(consts.DefaultAzureCredentialFileEnv, originalCredFile)
-				} else {
-					defer os.Unsetenv(consts.DefaultAzureCredentialFileEnv)
-				}
-				os.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
+				t.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
 
 				d, _ := NewFakeDriver(t)
 				d.setCloud(&azure.Cloud{})
@@ -145,13 +133,7 @@ func TestRun(t *testing.T) {
 					}
 				}()
 
-				originalCredFile, ok := os.LookupEnv(consts.DefaultAzureCredentialFileEnv)
-				if ok {
-					defer os.Setenv(consts.DefaultAzureCredentialFileEnv, originalCredFile)
-				} else {
-					defer os.Unsetenv(consts.DefaultAzureCredentialFileEnv)
-				}
-				os.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
+				t.Setenv(consts.DefaultAzureCredentialFileEnv, fakeCredFile)
 
 				d := newDriverV1(&DriverOptions{
 					NodeID:                 "",
@@ -250,6 +232,10 @@ func TestGetDefaultDiskMBPSReadWrite(t *testing.T) {
 		{
 			requestGiB: 512000000,
 			expected:   625,
+		},
+		{
+			requestGiB: 65535,
+			expected:   256,
 		},
 	}
 

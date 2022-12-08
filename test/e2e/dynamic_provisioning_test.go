@@ -630,14 +630,15 @@ func (t *dynamicProvisioningTestSuite) defineTests(isMultiZone bool) {
 	})
 
 	ginkgo.It("should create a pod, write and read to it, take a volume snapshot, and create another pod from the snapshot [disk.csi.azure.com]", func() {
-		skipIfTestingInWindowsCluster()
 		skipIfUsingInTreeVolumePlugin()
 
 		pod := testsuites.PodDetails{
-			Cmd: "echo 'hello world' > /mnt/test-1/data",
+			IsWindows:    isWindowsCluster,
+			WinServerVer: winServerVer,
+			Cmd:          convertToPowershellorCmdCommandIfNecessary("echo 'hello world' > /mnt/test-1/data"),
 			Volumes: t.normalizeVolumes([]testsuites.VolumeDetails{
 				{
-					FSType:    "ext4",
+					FSType:    getFSType(isWindowsCluster),
 					ClaimSize: "10Gi",
 					VolumeMount: testsuites.VolumeMountDetails{
 						NameGenerate:      "test-volume-",
@@ -648,7 +649,9 @@ func (t *dynamicProvisioningTestSuite) defineTests(isMultiZone bool) {
 			}, isMultiZone),
 		}
 		podWithSnapshot := testsuites.PodDetails{
-			Cmd: "grep 'hello world' /mnt/test-1/data",
+			IsWindows:    isWindowsCluster,
+			WinServerVer: winServerVer,
+			Cmd:          convertToPowershellorCmdCommandIfNecessary("grep 'hello world' /mnt/test-1/data"),
 		}
 		test := testsuites.DynamicallyProvisionedVolumeSnapshotTest{
 			CSIDriver:              testDriver,
@@ -667,14 +670,15 @@ func (t *dynamicProvisioningTestSuite) defineTests(isMultiZone bool) {
 	})
 
 	ginkgo.It("should create a pod, write to its pv, take a volume snapshot, overwrite data in original pv, create another pod from the snapshot, and read unaltered original data from original pv[disk.csi.azure.com]", func() {
-		skipIfTestingInWindowsCluster()
 		skipIfUsingInTreeVolumePlugin()
 
 		pod := testsuites.PodDetails{
-			Cmd: "echo 'hello world' > /mnt/test-1/data",
+			IsWindows:    isWindowsCluster,
+			WinServerVer: winServerVer,
+			Cmd:          convertToPowershellorCmdCommandIfNecessary("echo 'hello world' > /mnt/test-1/data"),
 			Volumes: t.normalizeVolumes([]testsuites.VolumeDetails{
 				{
-					FSType:    "ext4",
+					FSType:    getFSType(isWindowsCluster),
 					ClaimSize: "10Gi",
 					VolumeMount: testsuites.VolumeMountDetails{
 						NameGenerate:      "test-volume-",
@@ -686,11 +690,15 @@ func (t *dynamicProvisioningTestSuite) defineTests(isMultiZone bool) {
 		}
 
 		podOverwrite := testsuites.PodDetails{
-			Cmd: "echo 'overwrite' > /mnt/test-1/data",
+			IsWindows:    isWindowsCluster,
+			WinServerVer: winServerVer,
+			Cmd:          convertToPowershellorCmdCommandIfNecessary("echo 'overwrite' > /mnt/test-1/data; sleep 3600"),
 		}
 
 		podWithSnapshot := testsuites.PodDetails{
-			Cmd: "grep 'hello world' /mnt/test-1/data",
+			IsWindows:    isWindowsCluster,
+			WinServerVer: winServerVer,
+			Cmd:          convertToPowershellorCmdCommandIfNecessary("grep 'hello world' /mnt/test-1/data"),
 		}
 
 		test := testsuites.DynamicallyProvisionedVolumeSnapshotTest{
@@ -1136,6 +1144,50 @@ func (t *dynamicProvisioningTestSuite) defineTests(isMultiZone bool) {
 			PodCheck:               podCheck,
 			StorageClassParameters: storageClassParameters,
 		}
+		test.Run(cs, ns)
+	})
+
+	ginkgo.It("should succeed with advanced perfProfile [disk.csi.azure.com] [Windows]", func() {
+		skipIfUsingInTreeVolumePlugin()
+		skipIfOnAzureStackCloud()
+		skipIfTestingInWindowsCluster()
+		pods := []testsuites.PodDetails{
+			{
+				Cmd: convertToPowershellorCmdCommandIfNecessary("echo 'hello world' > /mnt/test-1/data && grep 'hello world' /mnt/test-1/data"),
+				Volumes: t.normalizeVolumes([]testsuites.VolumeDetails{
+					{
+						ClaimSize: "10Gi",
+						MountOptions: []string{
+							"barrier=1",
+							"acl",
+						},
+						VolumeMount: testsuites.VolumeMountDetails{
+							NameGenerate:      "test-volume-",
+							MountPathGenerate: "/mnt/test-",
+						},
+						VolumeAccessMode: v1.ReadWriteOnce,
+					},
+				}, isMultiZone),
+				IsWindows:    isWindowsCluster,
+				WinServerVer: winServerVer,
+			},
+		}
+		test := testsuites.DynamicallyProvisionedCmdVolumeTest{
+			CSIDriver: testDriver,
+			Pods:      pods,
+			StorageClassParameters: map[string]string{
+				"skuname":                             "StandardSSD_LRS",
+				"perfProfile":                         "advanced",
+				"device-setting/queue/max_sectors_kb": "211",
+				"device-setting/queue/scheduler":      "none",
+				"device-setting/device/queue_depth":   "17",
+				"device-setting/queue/nr_requests":    "44",
+				"device-setting/queue/read_ahead_kb":  "256",
+				"device-setting/queue/wbt_lat_usec":   "0",
+				"device-setting/queue/rotational":     "0",
+			},
+		}
+
 		test.Run(cs, ns)
 	})
 }

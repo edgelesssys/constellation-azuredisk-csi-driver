@@ -27,7 +27,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
 	"google.golang.org/grpc/codes"
@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/azureconstants"
 	consts "sigs.k8s.io/azuredisk-csi-driver/pkg/azureconstants"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/azureutils"
+	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	"sigs.k8s.io/cloud-provider-azure/pkg/metrics"
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
@@ -71,6 +72,13 @@ func (d *DriverV2) CreateVolume(ctx context.Context, req *csi.CreateVolumeReques
 
 	if !azureutils.IsValidVolumeCapabilities(volCaps, diskParams.MaxShares) {
 		return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
+	}
+	isAdvancedPerfProfile := strings.EqualFold(diskParams.PerfProfile, azureconstants.PerfProfileAdvanced)
+	// If perfProfile is set to advanced and no/invalid device settings are provided, fail the request
+	if d.getPerfOptimizationEnabled() && isAdvancedPerfProfile {
+		if err := optimization.AreDeviceSettingsValid(azureconstants.DummyBlockDevicePathLinux, diskParams.DeviceSettings); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
 	if acquired := d.volumeLocks.TryAcquire(name); !acquired {
@@ -189,6 +197,7 @@ func (d *DriverV2) CreateVolume(ctx context.Context, req *csi.CreateVolumeReques
 		SourceResourceID:    sourceID,
 		SourceType:          sourceType,
 		Tags:                diskParams.Tags,
+		Location:            diskParams.Location,
 	}
 	// Azure Stack Cloud does not support NetworkAccessPolicy
 	if !azureutils.IsAzureStackCloud(d.cloud.Config.Cloud, d.cloud.Config.DisableAzureStackCloud) {
@@ -337,6 +346,10 @@ func (d *DriverV2) ControllerPublishVolume(ctx context.Context, req *csi.Control
 		// Volume is already attached to node.
 		klog.V(2).Infof("Attach operation is successful. volume %s is already attached to node %s at lun %d.", diskURI, nodeName, lun)
 	} else {
+		if strings.Contains(strings.ToLower(err.Error()), strings.ToLower(azureconstants.TooManyRequests)) ||
+			strings.Contains(strings.ToLower(err.Error()), azureconstants.ClientThrottled) {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
 		var cachingMode compute.CachingTypes
 		if cachingMode, err = azureutils.GetCachingMode(volumeContext); err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
@@ -778,7 +791,7 @@ func (d *DriverV2) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRe
 	snapshot := compute.Snapshot{
 		SnapshotProperties: &compute.SnapshotProperties{
 			CreationData: &compute.CreationData{
-				CreateOption:     compute.DiskCreateOptionCopy,
+				CreateOption:     compute.Copy,
 				SourceResourceID: &sourceVolumeID,
 			},
 			Incremental: &incremental,

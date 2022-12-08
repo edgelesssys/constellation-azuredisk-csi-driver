@@ -64,6 +64,7 @@ const (
 	NetworkAccessPolicyField      = "networkaccesspolicy"
 	NotFound                      = "NotFound"
 	PerfProfileBasic              = "basic"
+	PerfProfileAdvanced           = "advanced"
 	PerfProfileField              = "perfprofile"
 	PerfProfileNone               = "none"
 	PremiumAccountPrefix          = "premium"
@@ -103,6 +104,9 @@ const (
 	SourceResourceID              = "source_resource_id"
 	SnapshotName                  = "snapshot_name"
 	SnapshotID                    = "snapshot_id"
+	DeviceSettingsKeyPrefix       = "device-setting/"
+	BlockDeviceRootPathLinux      = "/sys/block"
+	DummyBlockDevicePathLinux     = "/sys/block/sda"
 	// define different sleep time when hit throttling
 	SnapshotOpThrottlingSleepSec = 50
 )

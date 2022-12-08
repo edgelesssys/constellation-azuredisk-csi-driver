@@ -42,11 +42,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
-	"github.com/edgelesssys/constellation/csi/cryptmapper"
-	cryptKms "github.com/edgelesssys/constellation/csi/kms"
+	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
+	cryptKms "github.com/edgelesssys/constellation/v2/csi/kms"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -466,10 +466,10 @@ func getDefaultDiskMBPSReadWrite(requestGiB int) int {
 	bandwidth := azurecloudconsts.DefaultDiskMBpsReadWrite
 	iops := getDefaultDiskIOPSReadWrite(requestGiB)
 	if iops/256 > bandwidth {
-		bandwidth = iops / 256
+		bandwidth = int(util.RoundUpSize(int64(iops), 256))
 	}
 	if bandwidth > iops/4 {
-		bandwidth = iops / 4
+		bandwidth = int(util.RoundUpSize(int64(iops), 4))
 	}
 	if bandwidth > 4000 {
 		bandwidth = 4000

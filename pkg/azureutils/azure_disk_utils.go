@@ -38,13 +38,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/pborman/uuid"
@@ -58,19 +59,19 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	volumeUtil "k8s.io/kubernetes/pkg/volume/util"
-	"sigs.k8s.io/azuredisk-csi-driver/pkg/azureconstants"
 	consts "sigs.k8s.io/azuredisk-csi-driver/pkg/azureconstants"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azclients "sigs.k8s.io/cloud-provider-azure/pkg/azureclients"
+	azureconstants "sigs.k8s.io/cloud-provider-azure/pkg/consts"
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 )
 
 const (
 	azurePublicCloud                          = "AZUREPUBLICCLOUD"
 	azureStackCloud                           = "AZURESTACKCLOUD"
-	azurePublicCloudDefaultStorageAccountType = compute.DiskStorageAccountTypesStandardSSDLRS
-	azureStackCloudDefaultStorageAccountType  = compute.DiskStorageAccountTypesStandardLRS
+	azurePublicCloudDefaultStorageAccountType = compute.StandardSSDLRS
+	azureStackCloudDefaultStorageAccountType  = compute.StandardLRS
 	defaultAzureDataDiskCachingMode           = v1.AzureDataDiskCachingReadOnly
 	// default IOPS Caps & Throughput Cap (MBps) per https://docs.microsoft.com/en-us/azure/virtual-machines/linux/disks-ultra-ssd
 	// see https://docs.microsoft.com/en-us/rest/api/compute/disks/createorupdate#uri-parameters
@@ -120,6 +121,7 @@ var (
 type ManagedDiskParameters struct {
 	AccountType             string
 	CachingMode             v1.AzureDataDiskCachingMode
+	DeviceSettings          map[string]string
 	DiskAccessID            string
 	DiskEncryptionSetID     string
 	DiskEncryptionType      string
@@ -375,7 +377,7 @@ func GetSubscriptionIDFromURI(diskURI string) string {
 func GetValidCreationData(subscriptionID, resourceGroup, sourceResourceID, sourceType string) (compute.CreationData, error) {
 	if sourceResourceID == "" {
 		return compute.CreationData{
-			CreateOption: compute.DiskCreateOptionEmpty,
+			CreateOption: compute.Empty,
 		}, nil
 	}
 
@@ -391,7 +393,7 @@ func GetValidCreationData(subscriptionID, resourceGroup, sourceResourceID, sourc
 		}
 	default:
 		return compute.CreationData{
-			CreateOption: compute.DiskCreateOptionEmpty,
+			CreateOption: compute.Empty,
 		}, nil
 	}
 
@@ -404,7 +406,7 @@ func GetValidCreationData(subscriptionID, resourceGroup, sourceResourceID, sourc
 		return compute.CreationData{}, fmt.Errorf("sourceResourceID(%s) is invalid, correct format: %s", sourceResourceID, consts.ManagedDiskPathRE)
 	}
 	return compute.CreationData{
-		CreateOption:     compute.DiskCreateOptionCopy,
+		CreateOption:     compute.Copy,
 		SourceResourceID: &sourceResourceID,
 	}, nil
 }
@@ -427,6 +429,10 @@ func IsAzureStackCloud(cloud string, disableAzureStackCloud bool) bool {
 
 // IsValidAvailabilityZone returns true if the zone is in format of <region>-<zone-id>.
 func IsValidAvailabilityZone(zone, region string) bool {
+	if region == "" {
+		index := strings.Index(zone, "-")
+		return index > 0 && index < len(zone)-1
+	}
 	return strings.HasPrefix(zone, fmt.Sprintf("%s-", region))
 }
 
@@ -497,7 +503,7 @@ func NormalizeCachingMode(cachingMode v1.AzureDataDiskCachingMode) (v1.AzureData
 
 func NormalizeNetworkAccessPolicy(networkAccessPolicy string) (compute.NetworkAccessPolicy, error) {
 	if networkAccessPolicy == "" {
-		return compute.NetworkAccessPolicyAllowAll, nil
+		return compute.AllowAll, nil
 	}
 	policy := compute.NetworkAccessPolicy(networkAccessPolicy)
 	for _, s := range compute.PossibleNetworkAccessPolicyValues() {
@@ -518,8 +524,9 @@ func NormalizeStorageAccountType(storageAccountType, cloud string, disableAzureS
 
 	sku := compute.DiskStorageAccountTypes(storageAccountType)
 	supportedSkuNames := compute.PossibleDiskStorageAccountTypesValues()
+	supportedSkuNames = append(supportedSkuNames, azureconstants.PremiumV2LRS)
 	if IsAzureStackCloud(cloud, disableAzureStackCloud) {
-		supportedSkuNames = []compute.DiskStorageAccountTypes{compute.DiskStorageAccountTypesStandardLRS, compute.DiskStorageAccountTypesPremiumLRS}
+		supportedSkuNames = []compute.DiskStorageAccountTypes{compute.StandardLRS, compute.PremiumLRS}
 	}
 	for _, s := range supportedSkuNames {
 		if sku == s {
@@ -550,9 +557,10 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 	}
 
 	diskParams := ManagedDiskParameters{
-		Incremental:   true, //true by default
-		Tags:          make(map[string]string),
-		VolumeContext: parameters,
+		DeviceSettings: make(map[string]string),
+		Incremental:    true, //true by default
+		Tags:           make(map[string]string),
+		VolumeContext:  parameters,
 	}
 	for k, v := range parameters {
 		switch strings.ToLower(k) {
@@ -636,7 +644,13 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 		case consts.ZonedField:
 			// no op, only for backward compatibility with in-tree driver
 		default:
-			return diskParams, fmt.Errorf("invalid parameter %s in storage class", k)
+			// accept all device settings params
+			// device settings need to start with azureconstants.DeviceSettingsKeyPrefix
+			if deviceSettings, err := optimization.GetDeviceSettingFromAttribute(k); err == nil {
+				diskParams.DeviceSettings[filepath.Join(consts.DummyBlockDevicePathLinux, deviceSettings)] = v
+			} else {
+				return diskParams, fmt.Errorf("invalid parameter %s in storage class", k)
+			}
 		}
 	}
 	return diskParams, nil
@@ -721,7 +735,7 @@ func InsertDiskProperties(disk *compute.Disk, publishConext map[string]string) {
 }
 
 func SleepIfThrottled(err error, sleepSec int) {
-	if strings.Contains(strings.ToLower(err.Error()), strings.ToLower(azureconstants.TooManyRequests)) || strings.Contains(strings.ToLower(err.Error()), azureconstants.ClientThrottled) {
+	if strings.Contains(strings.ToLower(err.Error()), strings.ToLower(consts.TooManyRequests)) || strings.Contains(strings.ToLower(err.Error()), consts.ClientThrottled) {
 		klog.Warningf("sleep %d more seconds, waiting for throttling complete", sleepSec)
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 	}

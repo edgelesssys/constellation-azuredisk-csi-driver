@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/container-storage-interface/spec/lib/go/csi"
@@ -235,7 +235,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         mp,
 				}
 				_, err := d.CreateVolume(context.Background(), req)
-				expectedErr := status.Error(codes.InvalidArgument, "azureDisk - NOT_EXISTING is not supported sku/storageaccounttype. Supported values are [Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS UltraSSD_LRS]")
+				expectedErr := status.Error(codes.InvalidArgument, "azureDisk - NOT_EXISTING is not supported sku/storageaccounttype. Supported values are [Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS UltraSSD_LRS PremiumV2_LRS]")
 				if !reflect.DeepEqual(err, expectedErr) {
 					t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
 				}
@@ -437,6 +437,28 @@ func TestCreateVolume(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "[Failure] advanced perfProfile fails if no device settings provided",
+			testFunc: func(t *testing.T) {
+				d, _ := NewFakeDriver(t)
+				d.setPerfOptimizationEnabled(true)
+				stdCapacityRangetest := &csi.CapacityRange{
+					RequiredBytes: volumehelper.GiBToBytes(10),
+					LimitBytes:    volumehelper.GiBToBytes(15),
+				}
+				req := &csi.CreateVolumeRequest{
+					Name:               testVolumeName,
+					VolumeCapabilities: stdVolumeCapabilities,
+					CapacityRange:      stdCapacityRangetest,
+					Parameters:         map[string]string{"perfProfile": "advanced"},
+				}
+				_, err := d.CreateVolume(context.Background(), req)
+				expectedErr := status.Error(codes.InvalidArgument, "AreDeviceSettingsValid: No deviceSettings passed")
+				if !reflect.DeepEqual(err, expectedErr) {
+					t.Errorf("actualErr: (%v), expectedErr: (%v)", err, expectedErr)
+				}
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, tc.testFunc)
@@ -533,7 +555,7 @@ func TestGetSnapshotInfo(t *testing.T) {
 			expectedError:        nil,
 		},
 		{
-			// case insentive check
+			// case insensitive check
 			snapshotID:           "testurl/subscriptions/12/resourcegroups/23/providers/Microsoft.Compute/snapshots/snapshot-name",
 			expectedSnapshotName: "snapshot-name",
 			expectedRGName:       "23",
@@ -692,7 +714,7 @@ func TestControllerPublishVolume(t *testing.T) {
 				vm.VirtualMachineProperties = &compute.VirtualMachineProperties{
 					ProvisioningState: to.StringPtr(string(compute.ProvisioningStateFailed)),
 					HardwareProfile: &compute.HardwareProfile{
-						VMSize: compute.VirtualMachineSizeTypesStandardA0,
+						VMSize: compute.StandardA0,
 					},
 					InstanceView: &compute.VirtualMachineInstanceView{
 						Statuses: &vmstatus,
@@ -749,7 +771,7 @@ func TestControllerPublishVolume(t *testing.T) {
 				vm.VirtualMachineProperties = &compute.VirtualMachineProperties{
 					ProvisioningState: to.StringPtr(string(compute.ProvisioningStateSucceeded)),
 					HardwareProfile: &compute.HardwareProfile{
-						VMSize: compute.VirtualMachineSizeTypesStandardA0,
+						VMSize: compute.StandardA0,
 					},
 					InstanceView: &compute.VirtualMachineInstanceView{
 						Statuses: &vmstatus,
@@ -807,7 +829,7 @@ func TestControllerPublishVolume(t *testing.T) {
 				vm.VirtualMachineProperties = &compute.VirtualMachineProperties{
 					ProvisioningState: to.StringPtr(string(compute.ProvisioningStateSucceeded)),
 					HardwareProfile: &compute.HardwareProfile{
-						VMSize: compute.VirtualMachineSizeTypesStandardA0,
+						VMSize: compute.StandardA0,
 					},
 					InstanceView: &compute.VirtualMachineInstanceView{
 						Statuses: &vmstatus,
