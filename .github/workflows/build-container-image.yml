@@ -8,9 +8,6 @@ on:
         default: "latest"
         type: string
         required: true
-  push:
-    branches:
-      - main
 
 jobs:
   build-csi-driver:
