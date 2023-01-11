@@ -123,8 +123,7 @@ node:
   logLevel: 5
   livenessProbe:
     healthPort: 29603
-  kmsPort: "9000"
-  kmsNamespace: "kube-system"
+  keyserviceNamespace: "kube-system"
 
 snapshot:
   enabled: false
