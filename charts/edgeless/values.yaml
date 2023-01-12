@@ -123,6 +123,9 @@ node:
   logLevel: 5
   livenessProbe:
     healthPort: 29603
+global:
+  keyserviceName: "keyservice"
+  keyservicePort: 9000
   keyserviceNamespace: "kube-system"
 
 snapshot:
