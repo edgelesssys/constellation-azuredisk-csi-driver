@@ -1083,6 +1083,9 @@ func TestNodeExpandVolume(t *testing.T) {
 	notFoundErrAction := func() ([]byte, []byte, error) {
 		return []byte{}, []byte{}, notFoundErr
 	}
+	findmntAction := func() ([]byte, []byte, error) {
+		return []byte("test"), []byte{}, nil
+	}
 	blkidAction := func() ([]byte, []byte, error) {
 		return []byte("DEVICE=test\nTYPE=ext4"), []byte{}, nil
 	}
@@ -1144,7 +1147,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   blockSizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, notFoundErrAction},
+			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, notFoundErrAction},
 		},
 		{
 			desc: "Resize failure",
@@ -1156,7 +1159,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   resizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsFailedAction},
+			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsFailedAction},
 		},
 		{
 			desc: "Resize too small failure",
@@ -1168,7 +1171,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   sizeTooSmallErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, blockdevSizeTooSmallAction},
+			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, blockdevSizeTooSmallAction},
 		},
 		{
 			desc: "Successfully expanded",
@@ -1180,7 +1183,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			skipOnWindows: true,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, blockdevAction},
+			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, blockdevAction},
 		},
 		{
 			desc: "Block volume expansion",
