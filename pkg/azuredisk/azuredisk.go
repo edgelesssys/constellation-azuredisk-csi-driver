@@ -205,10 +205,7 @@ func newDriverV1(options *DriverOptions) *Driver {
 	// [Edgeless] set up dm-crypt
 	driver.evalSymLinks = filepath.EvalSymlinks
 	driver.getVolumeName = util.GetVolumeName
-	driver.cryptMapper = cryptmapper.New(
-		cryptKms.NewConstellationKMS(options.KMSAddr),
-		&cryptmapper.CryptDevice{},
-	)
+	driver.cryptMapper = cryptmapper.New(cryptKms.NewConstellationKMS(options.KMSAddr))
 
 	topologyKey = fmt.Sprintf("topology.%s/zone", driver.Name)
 
