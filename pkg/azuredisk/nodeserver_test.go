@@ -1160,7 +1160,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   blockSizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsAction, notFoundErrAction},
+			outputScripts: []testingexec.FakeAction{blkidAction, resize2fsAction, notFoundErrAction},
 		},
 		{
 			desc: "Resize failure",
@@ -1172,7 +1172,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			},
 			expectedErr:   resizeErr,
 			skipOnDarwin:  true, // ResizeFs not supported on Darwin
-			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsFailedAction},
+			outputScripts: []testingexec.FakeAction{findmntAction, blkidAction, resize2fsFailedAction, blockdevSizeTooSmallAction},
 		},
 		{
 			desc: "Resize too small failure",
@@ -1236,7 +1236,7 @@ func TestNodeExpandVolume(t *testing.T) {
 			d.setNextCommandOutputScripts(test.outputScripts...)
 		}
 
-		d.setDiskDeviceName("test")
+		d.setDiskDeviceName(test.req.VolumeId)
 
 		_, err := d.NodeExpandVolume(context.Background(), &test.req)
 		if !testutil.AssertError(&test.expectedErr, err) {
