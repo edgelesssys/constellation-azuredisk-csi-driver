@@ -58,16 +58,19 @@ REV = $(shell git describe --long --tags --dirty)
 BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 ENABLE_TOPOLOGY ?= false
 LDFLAGS ?= "-X ${PKG}/pkg/azuredisk.driverVersion=${IMAGE_VERSION} -X ${PKG}/pkg/azuredisk.gitCommit=${GIT_COMMIT} -X ${PKG}/pkg/azuredisk.buildDate=${BUILD_DATE} -s -w" ${GOTAGS}
-E2E_HELM_OPTIONS ?= --set image.azuredisk.repository=$(REGISTRY)/$(IMAGE_NAME) --set image.azuredisk.tag=$(IMAGE_VERSION) --set image.azuredisk.pullPolicy=Always --set driver.userAgentSuffix="e2e-test"
+E2E_HELM_OPTIONS ?= --set image.azuredisk.repository=$(REGISTRY)/$(IMAGE_NAME) --set image.azuredisk.tag=$(IMAGE_VERSION) --set image.azuredisk.pullPolicy=Always --set driver.userAgentSuffix="e2e-test" --set snapshot.VolumeSnapshotClass.enabled=true --set snapshot.enabled=true
 E2E_HELM_OPTIONS += ${EXTRA_HELM_OPTIONS}
 ifdef DISABLE_ZONE
 E2E_HELM_OPTIONS += --set node.supportZone=false
 endif
-GINKGO_FLAGS = -ginkgo.v
+GINKGO_FLAGS = -ginkgo.v -ginkgo.timeout=24h
 ifeq ($(ENABLE_TOPOLOGY), true)
 GINKGO_FLAGS += -ginkgo.focus="\[multi-az\]"
 else
 GINKGO_FLAGS += -ginkgo.focus="\[single-az\]"
+endif
+ifdef NODE_MACHINE_TYPE  # capz cluster
+E2E_HELM_OPTIONS += --set controller.enableTrafficManager=true
 endif
 GOPATH ?= $(shell go env GOPATH)
 GOBIN ?= $(GOPATH)/bin
@@ -194,7 +197,9 @@ container-linux:
 		--file ./pkg/azurediskplugin/Dockerfile \
 		--platform="linux/$(ARCH)" \
 		--build-arg ARCH=${ARCH} \
-		--build-arg PLUGIN_NAME=${PLUGIN_NAME}
+		--build-arg PLUGIN_NAME=${PLUGIN_NAME} \
+		--provenance=false \
+		--sbom=false
 
 .PHONY: container-windows
 container-windows:
@@ -206,7 +211,9 @@ container-windows:
 		--file ./pkg/azurediskplugin/Windows.Dockerfile \
 		--build-arg ARCH=${ARCH} \
 		--build-arg PLUGIN_NAME=${PLUGIN_NAME} \
-		--build-arg OSVERSION=$(OSVERSION) 
+		--build-arg OSVERSION=$(OSVERSION) \
+		--provenance=false \
+		--sbom=false
 
 .PHONY: container-all
 container-all: azuredisk-windows

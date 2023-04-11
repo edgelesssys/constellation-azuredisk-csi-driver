@@ -35,6 +35,7 @@ limitations under the License.
 package azureutils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -46,7 +47,6 @@ import (
 	"unicode"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/pborman/uuid"
 	v1 "k8s.io/api/core/v1"
@@ -55,6 +55,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"k8s.io/mount-utils"
+	"k8s.io/utils/pointer"
 
 	clientset "k8s.io/client-go/kubernetes"
 	api "k8s.io/kubernetes/pkg/apis/core"
@@ -164,7 +165,8 @@ func GetCachingMode(attributes map[string]string) (compute.CachingTypes, error) 
 }
 
 // GetCloudProviderFromClient get Azure Cloud Provider
-func GetCloudProviderFromClient(kubeClient *clientset.Clientset, secretName, secretNamespace, userAgent string, allowEmptyCloudConfig bool) (*azure.Cloud, error) {
+func GetCloudProviderFromClient(ctx context.Context, kubeClient *clientset.Clientset, secretName, secretNamespace, userAgent string,
+	allowEmptyCloudConfig bool, enableTrafficMgr bool, trafficMgrPort int64) (*azure.Cloud, error) {
 	var config *azure.Config
 	var fromSecret bool
 	var err error
@@ -228,7 +230,12 @@ func GetCloudProviderFromClient(kubeClient *clientset.Clientset, secretName, sec
 			CloudProviderRateLimit: false,
 		}
 		config.UserAgent = userAgent
-		if err = az.InitializeCloudFromConfig(config, fromSecret, false); err != nil {
+		if enableTrafficMgr && trafficMgrPort > 0 {
+			trafficMgrAddr := fmt.Sprintf("http://localhost:%d/", trafficMgrPort)
+			klog.V(2).Infof("set ResourceManagerEndpoint as %s", trafficMgrAddr)
+			config.ResourceManagerEndpoint = trafficMgrAddr
+		}
+		if err = az.InitializeCloudFromConfig(ctx, config, fromSecret, false); err != nil {
 			klog.Warningf("InitializeCloudFromConfig failed with error: %v", err)
 		}
 	}
@@ -241,7 +248,8 @@ func GetCloudProviderFromClient(kubeClient *clientset.Clientset, secretName, sec
 }
 
 // GetCloudProviderFromConfig get Azure Cloud Provider
-func GetCloudProvider(kubeConfig, secretName, secretNamespace, userAgent string, allowEmptyCloudConfig bool) (*azure.Cloud, error) {
+func GetCloudProvider(ctx context.Context, kubeConfig, secretName, secretNamespace, userAgent string,
+	allowEmptyCloudConfig, enableTrafficMgr bool, trafficMgrPort int64) (*azure.Cloud, error) {
 	kubeClient, err := GetKubeClient(kubeConfig)
 	if err != nil {
 		klog.Warningf("get kubeconfig(%s) failed with error: %v", kubeConfig, err)
@@ -249,7 +257,8 @@ func GetCloudProvider(kubeConfig, secretName, secretNamespace, userAgent string,
 			return nil, fmt.Errorf("failed to get KubeClient: %v", err)
 		}
 	}
-	return GetCloudProviderFromClient(kubeClient, secretName, secretNamespace, userAgent, allowEmptyCloudConfig)
+	return GetCloudProviderFromClient(ctx, kubeClient, secretName, secretNamespace, userAgent,
+		allowEmptyCloudConfig, enableTrafficMgr, trafficMgrPort)
 }
 
 // GetKubeConfig gets config object from config file
@@ -550,6 +559,19 @@ func ValidateDiskEncryptionType(encryptionType string) error {
 	return fmt.Errorf("DiskEncryptionType(%s) is not supported", encryptionType)
 }
 
+func ValidateDataAccessAuthMode(dataAccessAuthMode string) error {
+	if dataAccessAuthMode == "" {
+		return nil
+	}
+	supportedModes := compute.PossibleDataAccessAuthModeValues()
+	for _, s := range supportedModes {
+		if dataAccessAuthMode == string(s) {
+			return nil
+		}
+	}
+	return fmt.Errorf("dataAccessAuthMode(%s) is not supported", dataAccessAuthMode)
+}
+
 func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, error) {
 	var err error
 	if parameters == nil {
@@ -631,7 +653,7 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 			diskParams.DiskAccessID = v
 		case consts.EnableBurstingField:
 			if strings.EqualFold(v, consts.TrueValue) {
-				diskParams.EnableBursting = to.BoolPtr(true)
+				diskParams.EnableBursting = pointer.Bool(true)
 			}
 		case consts.UserAgentField:
 			diskParams.UserAgent = v
@@ -653,6 +675,13 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 			}
 		}
 	}
+
+	if strings.EqualFold(diskParams.AccountType, string(azureconstants.PremiumV2LRS)) {
+		if diskParams.CachingMode != "" && !strings.EqualFold(string(diskParams.CachingMode), string(v1.AzureDataDiskCachingNone)) {
+			return diskParams, fmt.Errorf("cachingMode %s is not supported for %s", diskParams.CachingMode, azureconstants.PremiumV2LRS)
+		}
+	}
+
 	return diskParams, nil
 }
 
@@ -739,4 +768,19 @@ func SleepIfThrottled(err error, sleepSec int) {
 		klog.Warningf("sleep %d more seconds, waiting for throttling complete", sleepSec)
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 	}
+}
+
+// SetKeyValueInMap set key/value pair in map
+// key in the map is case insensitive, if key already exists, overwrite existing value
+func SetKeyValueInMap(m map[string]string, key, value string) {
+	if m == nil {
+		return
+	}
+	for k := range m {
+		if strings.EqualFold(k, key) {
+			m[k] = value
+			return
+		}
+	}
+	m[key] = value
 }
