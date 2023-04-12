@@ -72,26 +72,30 @@ import (
 
 // DriverOptions defines driver parameters specified in driver deployment
 type DriverOptions struct {
-	NodeID                     string
-	DriverName                 string
-	VolumeAttachLimit          int64
-	EnablePerfOptimization     bool
-	CloudConfigSecretName      string
-	CloudConfigSecretNamespace string
-	CustomUserAgent            string
-	UserAgentSuffix            string
-	UseCSIProxyGAInterface     bool
-	EnableDiskOnlineResize     bool
-	AllowEmptyCloudConfig      bool
-	EnableAsyncAttach          bool
-	EnableListVolumes          bool
-	EnableListSnapshots        bool
-	SupportZone                bool
-	GetNodeInfoFromLabels      bool
-	EnableDiskCapacityCheck    bool
-	VMSSCacheTTLInSeconds      int64
-	VMType                     string
-	KMSAddr                    string
+	NodeID                       string
+	DriverName                   string
+	VolumeAttachLimit            int64
+	EnablePerfOptimization       bool
+	CloudConfigSecretName        string
+	CloudConfigSecretNamespace   string
+	CustomUserAgent              string
+	UserAgentSuffix              string
+	UseCSIProxyGAInterface       bool
+	EnableDiskOnlineResize       bool
+	AllowEmptyCloudConfig        bool
+	EnableAsyncAttach            bool
+	EnableListVolumes            bool
+	EnableListSnapshots          bool
+	SupportZone                  bool
+	GetNodeInfoFromLabels        bool
+	EnableDiskCapacityCheck      bool
+	DisableUpdateCache           bool
+	EnableTrafficManager         bool
+	TrafficManagerPort           int64
+	AttachDetachInitialDelayInMs int64
+	VMSSCacheTTLInSeconds        int64
+	VMType                       string
+	KMSAddr                      string
 }
 
 // CSIDriver defines the interface for a CSI driver.
@@ -117,32 +121,36 @@ type cryptMapper interface {
 // DriverCore contains fields common to both the V1 and V2 driver, and implements all interfaces of CSI drivers
 type DriverCore struct {
 	csicommon.CSIDriver
-	perfOptimizationEnabled    bool
-	cloudConfigSecretName      string
-	cloudConfigSecretNamespace string
-	customUserAgent            string
-	userAgentSuffix            string
-	kubeconfig                 string
-	cloud                      *azure.Cloud
-	mounter                    *mount.SafeFormatAndMount
-	deviceHelper               optimization.Interface
-	nodeInfo                   *optimization.NodeInfo
-	ioHandler                  azureutils.IOHandler
-	hostUtil                   hostUtil
-	useCSIProxyGAInterface     bool
-	enableDiskOnlineResize     bool
-	allowEmptyCloudConfig      bool
-	enableAsyncAttach          bool
-	enableListVolumes          bool
-	enableListSnapshots        bool
-	supportZone                bool
-	getNodeInfoFromLabels      bool
-	enableDiskCapacityCheck    bool
-	vmssCacheTTLInSeconds      int64
-	vmType                     string
-	getVolumeName              func(string) (string, error)
-	evalSymLinks               func(string) (string, error)
-	cryptMapper                cryptMapper
+	perfOptimizationEnabled      bool
+	cloudConfigSecretName        string
+	cloudConfigSecretNamespace   string
+	customUserAgent              string
+	userAgentSuffix              string
+	kubeconfig                   string
+	cloud                        *azure.Cloud
+	mounter                      *mount.SafeFormatAndMount
+	deviceHelper                 optimization.Interface
+	nodeInfo                     *optimization.NodeInfo
+	ioHandler                    azureutils.IOHandler
+	hostUtil                     hostUtil
+	useCSIProxyGAInterface       bool
+	enableDiskOnlineResize       bool
+	allowEmptyCloudConfig        bool
+	enableAsyncAttach            bool
+	enableListVolumes            bool
+	enableListSnapshots          bool
+	supportZone                  bool
+	getNodeInfoFromLabels        bool
+	enableDiskCapacityCheck      bool
+	disableUpdateCache           bool
+	enableTrafficManager         bool
+	trafficManagerPort           int64
+	vmssCacheTTLInSeconds        int64
+	attachDetachInitialDelayInMs int64
+	vmType                       string
+	getVolumeName                func(string) (string, error)
+	evalSymLinks                 func(string) (string, error)
+	cryptMapper                  cryptMapper
 }
 
 // Driver is the v1 implementation of the Azure Disk CSI Driver.
@@ -175,6 +183,10 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.supportZone = options.SupportZone
 	driver.getNodeInfoFromLabels = options.GetNodeInfoFromLabels
 	driver.enableDiskCapacityCheck = options.EnableDiskCapacityCheck
+	driver.disableUpdateCache = options.DisableUpdateCache
+	driver.attachDetachInitialDelayInMs = options.AttachDetachInitialDelayInMs
+	driver.enableTrafficManager = options.EnableTrafficManager
+	driver.trafficManagerPort = options.TrafficManagerPort
 	driver.vmssCacheTTLInSeconds = options.VMSSCacheTTLInSeconds
 	driver.vmType = options.VMType
 	driver.volumeLocks = volumehelper.NewVolumeLocks()
@@ -212,40 +224,48 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 	userAgent := GetUserAgent(d.Name, d.customUserAgent, d.userAgentSuffix)
 	klog.V(2).Infof("driver userAgent: %s", userAgent)
 
-	cloud, err := azureutils.GetCloudProvider(kubeconfig, d.cloudConfigSecretName, d.cloudConfigSecretNamespace, userAgent, d.allowEmptyCloudConfig)
+	cloud, err := azureutils.GetCloudProvider(context.Background(), kubeconfig, d.cloudConfigSecretName, d.cloudConfigSecretNamespace,
+		userAgent, d.allowEmptyCloudConfig, d.enableTrafficManager, d.trafficManagerPort)
 	if err != nil {
 		klog.Fatalf("failed to get Azure Cloud Provider, error: %v", err)
 	}
 	d.cloud = cloud
 	d.kubeconfig = kubeconfig
 
-	if d.vmType != "" {
-		klog.V(2).Infof("override VMType(%s) in cloud config as %s", d.cloud.VMType, d.vmType)
-		d.cloud.VMType = d.vmType
-	}
-
-	if d.NodeID == "" {
-		// Disable UseInstanceMetadata for controller to mitigate a timeout issue using IMDS
-		// https://github.com/kubernetes-sigs/azuredisk-csi-driver/issues/168
-		klog.V(2).Infof("disable UseInstanceMetadata for controller")
-		d.cloud.Config.UseInstanceMetadata = false
-
-		if d.cloud.VMType == azurecloudconsts.VMTypeStandard && d.cloud.DisableAvailabilitySetNodes {
-			klog.V(2).Infof("set DisableAvailabilitySetNodes as false since VMType is %s", d.cloud.VMType)
-			d.cloud.DisableAvailabilitySetNodes = false
+	if d.cloud != nil {
+		if d.vmType != "" {
+			klog.V(2).Infof("override VMType(%s) in cloud config as %s", d.cloud.VMType, d.vmType)
+			d.cloud.VMType = d.vmType
 		}
 
-		if d.cloud.VMType == azurecloudconsts.VMTypeVMSS && !d.cloud.DisableAvailabilitySetNodes && disableAVSetNodes {
-			klog.V(2).Infof("DisableAvailabilitySetNodes for controller since current VMType is vmss")
-			d.cloud.DisableAvailabilitySetNodes = true
-		}
-		klog.V(2).Infof("cloud: %s, location: %s, rg: %s, VMType: %s, PrimaryScaleSetName: %s, PrimaryAvailabilitySetName: %s, DisableAvailabilitySetNodes: %v", d.cloud.Cloud, d.cloud.Location, d.cloud.ResourceGroup, d.cloud.VMType, d.cloud.PrimaryScaleSetName, d.cloud.PrimaryAvailabilitySetName, d.cloud.DisableAvailabilitySetNodes)
-	}
+		if d.NodeID == "" {
+			// Disable UseInstanceMetadata for controller to mitigate a timeout issue using IMDS
+			// https://github.com/kubernetes-sigs/azuredisk-csi-driver/issues/168
+			klog.V(2).Infof("disable UseInstanceMetadata for controller")
+			d.cloud.Config.UseInstanceMetadata = false
 
-	if d.vmssCacheTTLInSeconds > 0 {
-		klog.V(2).Infof("reset vmssCacheTTLInSeconds as %d", d.vmssCacheTTLInSeconds)
-		d.cloud.VMCacheTTLInSeconds = int(d.vmssCacheTTLInSeconds)
-		d.cloud.VmssCacheTTLInSeconds = int(d.vmssCacheTTLInSeconds)
+			if d.cloud.VMType == azurecloudconsts.VMTypeStandard && d.cloud.DisableAvailabilitySetNodes {
+				klog.V(2).Infof("set DisableAvailabilitySetNodes as false since VMType is %s", d.cloud.VMType)
+				d.cloud.DisableAvailabilitySetNodes = false
+			}
+
+			if d.cloud.VMType == azurecloudconsts.VMTypeVMSS && !d.cloud.DisableAvailabilitySetNodes && disableAVSetNodes {
+				klog.V(2).Infof("DisableAvailabilitySetNodes for controller since current VMType is vmss")
+				d.cloud.DisableAvailabilitySetNodes = true
+			}
+			klog.V(2).Infof("cloud: %s, location: %s, rg: %s, VMType: %s, PrimaryScaleSetName: %s, PrimaryAvailabilitySetName: %s, DisableAvailabilitySetNodes: %v", d.cloud.Cloud, d.cloud.Location, d.cloud.ResourceGroup, d.cloud.VMType, d.cloud.PrimaryScaleSetName, d.cloud.PrimaryAvailabilitySetName, d.cloud.DisableAvailabilitySetNodes)
+		}
+
+		if d.vmssCacheTTLInSeconds > 0 {
+			klog.V(2).Infof("reset vmssCacheTTLInSeconds as %d", d.vmssCacheTTLInSeconds)
+			d.cloud.VMCacheTTLInSeconds = int(d.vmssCacheTTLInSeconds)
+			d.cloud.VmssCacheTTLInSeconds = int(d.vmssCacheTTLInSeconds)
+		}
+
+		if d.cloud.ManagedDiskController != nil {
+			d.cloud.DisableUpdateCache = d.disableUpdateCache
+			d.cloud.AttachDetachInitialDelayInMs = int(d.attachDetachInitialDelayInMs)
+		}
 	}
 
 	d.deviceHelper = optimization.NewSafeDeviceHelper()

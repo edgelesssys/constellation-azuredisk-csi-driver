@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -300,9 +300,9 @@ func (volume *VolumeDetails) CreateStorageClass(client clientset.Interface, name
 	return tsc, tsc.Cleanup
 }
 
-func CreateVolumeSnapshotClass(client restclientset.Interface, namespace *v1.Namespace, csiDriver driver.VolumeSnapshotTestDriver) (*TestVolumeSnapshotClass, func()) {
+func CreateVolumeSnapshotClass(client restclientset.Interface, namespace *v1.Namespace, parameters map[string]string, csiDriver driver.VolumeSnapshotTestDriver) (*TestVolumeSnapshotClass, func()) {
 	ginkgo.By("setting up the VolumeSnapshotClass")
-	volumeSnapshotClass := csiDriver.GetVolumeSnapshotClass(namespace.Name)
+	volumeSnapshotClass := csiDriver.GetVolumeSnapshotClass(namespace.Name, parameters)
 	tvsc := NewTestVolumeSnapshotClass(client, namespace, volumeSnapshotClass)
 
 	return tvsc, tvsc.Cleanup

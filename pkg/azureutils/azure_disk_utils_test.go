@@ -17,6 +17,7 @@ limitations under the License.
 package azureutils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -28,11 +29,11 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 	consts "sigs.k8s.io/azuredisk-csi-driver/pkg/azureconstants"
 	"sigs.k8s.io/azuredisk-csi-driver/test/utils/testutil"
 )
@@ -377,7 +378,7 @@ users:
 				t.Error(err)
 			}
 		}
-		cloud, err := GetCloudProvider(test.kubeconfig, "", "", test.userAgent, test.allowEmptyCloudConfig)
+		cloud, err := GetCloudProvider(context.Background(), test.kubeconfig, "", "", test.userAgent, test.allowEmptyCloudConfig, false, -1)
 		if !reflect.DeepEqual(err, test.expectedErr) && !strings.Contains(err.Error(), test.expectedErr.Error()) {
 			t.Errorf("desc: %s,\n input: %q, GetCloudProvider err: %v, expectedErr: %v", test.desc, test.kubeconfig, err, test.expectedErr)
 		}
@@ -1222,7 +1223,35 @@ func TestValidateDiskEncryptionType(t *testing.T) {
 	}
 	for _, test := range tests {
 		err := ValidateDiskEncryptionType(test.diskEncryptionType)
-		assert.Equal(t, err, test.expectedErr)
+		assert.Equal(t, test.expectedErr, err)
+	}
+}
+
+func TestValidateDataAccessAuthMode(t *testing.T) {
+	tests := []struct {
+		dataAccessAuthMode string
+		expectedErr        error
+	}{
+		{
+			dataAccessAuthMode: "",
+			expectedErr:        nil,
+		},
+		{
+			dataAccessAuthMode: "None",
+			expectedErr:        nil,
+		},
+		{
+			dataAccessAuthMode: "AzureActiveDirectory",
+			expectedErr:        nil,
+		},
+		{
+			dataAccessAuthMode: "invalid",
+			expectedErr:        fmt.Errorf("dataAccessAuthMode(invalid) is not supported"),
+		},
+	}
+	for _, test := range tests {
+		err := ValidateDataAccessAuthMode(test.dataAccessAuthMode)
+		assert.Equal(t, test.expectedErr, err)
 	}
 }
 
@@ -1392,6 +1421,56 @@ func TestParseDiskParameters(t *testing.T) {
 			expectedError: fmt.Errorf("parse invalidValue failed with error: strconv.Atoi: parsing \"invalidValue\": invalid syntax"),
 		},
 		{
+			name:        "disk parameters with PremiumV2_LRS",
+			inputParams: map[string]string{consts.SkuNameField: "PremiumV2_LRS"},
+			expectedOutput: ManagedDiskParameters{
+				AccountType:    "PremiumV2_LRS",
+				Incremental:    true,
+				Tags:           make(map[string]string),
+				VolumeContext:  map[string]string{consts.SkuNameField: "PremiumV2_LRS"},
+				DeviceSettings: make(map[string]string),
+			},
+			expectedError: nil,
+		},
+		{
+			name: "disk parameters with PremiumV2_LRS (valid cachingMode)",
+			inputParams: map[string]string{
+				consts.SkuNameField:     "PremiumV2_LRS",
+				consts.CachingModeField: "none",
+			},
+			expectedOutput: ManagedDiskParameters{
+				AccountType: "PremiumV2_LRS",
+				CachingMode: "none",
+				Incremental: true,
+				Tags:        make(map[string]string),
+				VolumeContext: map[string]string{
+					consts.SkuNameField:     "PremiumV2_LRS",
+					consts.CachingModeField: "none",
+				},
+				DeviceSettings: make(map[string]string),
+			},
+			expectedError: nil,
+		},
+		{
+			name: "disk parameters with PremiumV2_LRS (invalid cachingMode)",
+			inputParams: map[string]string{
+				consts.SkuNameField:     "PremiumV2_LRS",
+				consts.CachingModeField: "ReadOnly",
+			},
+			expectedOutput: ManagedDiskParameters{
+				AccountType: "PremiumV2_LRS",
+				CachingMode: "ReadOnly",
+				Incremental: true,
+				Tags:        make(map[string]string),
+				VolumeContext: map[string]string{
+					consts.SkuNameField:     "PremiumV2_LRS",
+					consts.CachingModeField: "ReadOnly",
+				},
+				DeviceSettings: make(map[string]string),
+			},
+			expectedError: fmt.Errorf("cachingMode ReadOnly is not supported for PremiumV2_LRS"),
+		},
+		{
 			name: "valid parameters input",
 			inputParams: map[string]string{
 				consts.SkuNameField:             "skuName",
@@ -1442,7 +1521,7 @@ func TestParseDiskParameters(t *testing.T) {
 				PerfProfile:             "None",
 				NetworkAccessPolicy:     "networkAccessPolicy",
 				DiskAccessID:            "diskAccessID",
-				EnableBursting:          to.BoolPtr(true),
+				EnableBursting:          pointer.Bool(true),
 				UserAgent:               "userAgent",
 				VolumeContext: map[string]string{
 					consts.SkuNameField:             "skuName",
@@ -1654,13 +1733,13 @@ func TestInsertDiskProperties(t *testing.T) {
 				Sku: &compute.DiskSku{Name: compute.StandardSSDLRS},
 				DiskProperties: &compute.DiskProperties{
 					NetworkAccessPolicy: compute.AllowPrivate,
-					DiskIOPSReadWrite:   to.Int64Ptr(6400),
-					DiskMBpsReadWrite:   to.Int64Ptr(100),
+					DiskIOPSReadWrite:   pointer.Int64(6400),
+					DiskMBpsReadWrite:   pointer.Int64(100),
 					CreationData: &compute.CreationData{
-						LogicalSectorSize: to.Int32Ptr(512),
+						LogicalSectorSize: pointer.Int32(512),
 					},
-					Encryption: &compute.Encryption{DiskEncryptionSetID: to.StringPtr("/subs/DiskEncryptionSetID")},
-					MaxShares:  to.Int32Ptr(3),
+					Encryption: &compute.Encryption{DiskEncryptionSetID: pointer.String("/subs/DiskEncryptionSetID")},
+					MaxShares:  pointer.Int32(3),
 				},
 			},
 			inputMap: map[string]string{},
@@ -1722,5 +1801,59 @@ func TestSleepIfThrottled(t *testing.T) {
 				assert.GreaterOrEqual(t, actualSleepDuration, test.expectedSleepDuration)
 			}
 		})
+	}
+}
+
+func TestSetKeyValueInMap(t *testing.T) {
+	tests := []struct {
+		desc     string
+		m        map[string]string
+		key      string
+		value    string
+		expected map[string]string
+	}{
+		{
+			desc:  "nil map",
+			key:   "key",
+			value: "value",
+		},
+		{
+			desc:     "empty map",
+			m:        map[string]string{},
+			key:      "key",
+			value:    "value",
+			expected: map[string]string{"key": "value"},
+		},
+		{
+			desc:  "non-empty map",
+			m:     map[string]string{"k": "v"},
+			key:   "key",
+			value: "value",
+			expected: map[string]string{
+				"k":   "v",
+				"key": "value",
+			},
+		},
+		{
+			desc:     "same key already exists",
+			m:        map[string]string{"subDir": "value2"},
+			key:      "subDir",
+			value:    "value",
+			expected: map[string]string{"subDir": "value"},
+		},
+		{
+			desc:     "case insensitive key already exists",
+			m:        map[string]string{"subDir": "value2"},
+			key:      "subdir",
+			value:    "value",
+			expected: map[string]string{"subDir": "value"},
+		},
+	}
+
+	for _, test := range tests {
+		SetKeyValueInMap(test.m, test.key, test.value)
+		if !reflect.DeepEqual(test.m, test.expected) {
+			t.Errorf("test[%s]: unexpected output: %v, expected result: %v", test.desc, test.m, test.expected)
+		}
 	}
 }
