@@ -177,7 +177,7 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
 	}
-	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, integrity)
+	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, devicePathReal, diskName, integrity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
 	}
