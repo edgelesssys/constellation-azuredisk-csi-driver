@@ -37,7 +37,6 @@ package azuredisk
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -155,7 +154,6 @@ type DriverCore struct {
 	getNodeIDFromIMDS            bool
 	enableOtelTracing            bool
 	getVolumeName                func(string) (string, error)
-	evalSymLinks                 func(string) (string, error)
 	cryptMapper                  cryptMapper
 }
 
@@ -203,7 +201,6 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.hostUtil = hostutil.NewHostUtil()
 
 	// [Edgeless] set up dm-crypt
-	driver.evalSymLinks = filepath.EvalSymlinks
 	driver.getVolumeName = util.GetVolumeName
 	driver.cryptMapper = cryptmapper.New(cryptKms.NewConstellationKMS(options.KMSAddr))
 
