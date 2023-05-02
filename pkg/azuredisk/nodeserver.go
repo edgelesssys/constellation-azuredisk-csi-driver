@@ -173,10 +173,6 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 
 	// [Edgeless] Map the device as a crypt device, creating a new LUKS partition if needed
 	fstype, integrity := cryptmapper.IsIntegrityFS(fstype)
-	devicePathReal, err := d.evalSymLinks(source)
-	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
-	}
 	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, integrity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
@@ -301,10 +297,7 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 		}
-		source, err = d.evalSymLinks(filepath.Join("/dev/mapper", diskName))
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "NodePublishVolume: can not evaluate source path: %v", err)
-		}
+		source := filepath.Join("/dev/mapper", diskName)
 
 		klog.V(2).Infof("NodePublishVolume [block]: found device path %s", source)
 		err = d.ensureBlockTargetFile(target)
