@@ -442,7 +442,7 @@ func IsValidAvailabilityZone(zone, region string) bool {
 		index := strings.Index(zone, "-")
 		return index > 0 && index < len(zone)-1
 	}
-	return strings.HasPrefix(zone, fmt.Sprintf("%s-", region))
+	return strings.HasPrefix(zone, fmt.Sprintf("%s-", LowerCaseRegion(region)))
 }
 
 func IsValidDiskURI(diskURI string) error {
@@ -716,6 +716,18 @@ func PickAvailabilityZone(requirement *csi.TopologyRequirement, region, topology
 		}
 	}
 	return ""
+}
+
+// LowerCaseRegion replaces a region string containing upper case characters and whitespaces with lowercase characters and no whitespaces.
+// This is required because Kubernetes does not allow whitespaces or upper case characters as label values.
+func LowerCaseRegion(region string) string {
+	return strings.ToLower(strings.ReplaceAll(region, " ", ""))
+}
+
+// UpperCaseZone converts a Kubernetes conformant zone string to a format compatible with Azure.
+func UpperCaseZone(upperCaseRegion string, lowerCaseZone string) string {
+	zoneSuffix := strings.TrimPrefix(lowerCaseZone, LowerCaseRegion(upperCaseRegion))
+	return upperCaseRegion + zoneSuffix
 }
 
 func checkDiskName(diskName string) bool {

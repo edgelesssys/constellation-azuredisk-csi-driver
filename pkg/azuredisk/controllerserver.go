@@ -162,7 +162,7 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		// make volume scheduled on all 3 availability zones
 		for i := 1; i <= 3; i++ {
 			topology := &csi.Topology{
-				Segments: map[string]string{topologyKey: fmt.Sprintf("%s-%d", diskParams.Location, i)},
+				Segments: map[string]string{topologyKey: fmt.Sprintf("%s-%d", azureutils.LowerCaseRegion(diskParams.Location), i)},
 			}
 			accessibleTopology = append(accessibleTopology, topology)
 		}
@@ -177,6 +177,11 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 				Segments: map[string]string{topologyKey: diskZone},
 			},
 		}
+	}
+
+	// convert diskZone to Azure compatible format
+	if diskZone != "" {
+		diskZone = azureutils.UpperCaseZone(diskParams.Location, diskZone)
 	}
 
 	if d.enableDiskCapacityCheck {
