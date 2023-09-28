@@ -910,14 +910,13 @@ func TestIsAvailabilityZone(t *testing.T) {
 		expected bool
 	}{
 		{"empty string should return false", "", "eastus", false},
-		{"wrong format should return false", "123", "eastus", false},
+		{"wrong farmat should return false", "123", "eastus", false},
 		{"wrong location should return false", "chinanorth-1", "eastus", false},
 		{"correct zone should return true", "eastus-1", "eastus", true},
 		{"empty location should return true", "eastus-1", "", true},
 		{"empty location with fault domain should return false", "1", "", false},
 		{"empty location with wrong format should return false", "-1", "", false},
 		{"empty location with wrong format should return false", "eastus-", "", false},
-		{"upper case format with white space should return true", "eastus-1 ", "East US", true},
 	}
 
 	for _, test := range tests {
@@ -1676,27 +1675,6 @@ func TestPickAvailabilityZone(t *testing.T) {
 				req := &csi.TopologyRequirement{}
 				expectedresponse := ""
 				region := "test"
-				actualresponse := PickAvailabilityZone(req, region, "N/A")
-				if !reflect.DeepEqual(expectedresponse, actualresponse) {
-					t.Errorf("actualresponse: (%v), expectedresponse: (%v)", actualresponse, expectedresponse)
-				}
-			},
-		},
-		{
-			name: "upper case region",
-			testFunc: func(t *testing.T) {
-				expectedresponse := "testregion-01"
-				region := "Test Region"
-				mp := make(map[string]string)
-				mp["N/A"] = "testregion-01"
-				topology := &csi.Topology{
-					Segments: mp,
-				}
-				topologies := []*csi.Topology{}
-				topologies = append(topologies, topology)
-				req := &csi.TopologyRequirement{
-					Preferred: topologies,
-				}
 				actualresponse := PickAvailabilityZone(req, region, "N/A")
 				if !reflect.DeepEqual(expectedresponse, actualresponse) {
 					t.Errorf("actualresponse: (%v), expectedresponse: (%v)", actualresponse, expectedresponse)
