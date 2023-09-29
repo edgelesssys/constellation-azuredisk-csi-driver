@@ -39,14 +39,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/pborman/uuid"
 	v1 "k8s.io/api/core/v1"
@@ -64,7 +66,6 @@ import (
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azclients "sigs.k8s.io/cloud-provider-azure/pkg/azureclients"
-	azureconstants "sigs.k8s.io/cloud-provider-azure/pkg/consts"
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 )
 
@@ -79,6 +80,7 @@ const (
 	diskNameMinLength         = 1
 	diskNameMaxLength         = 80
 	diskNameGenerateMaxLength = 76 // maxLength = 80 - (4 for ".vhd") = 76
+	MaxPathLengthWindows      = 260
 )
 
 var (
@@ -117,6 +119,9 @@ var (
 			Mode: csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER,
 		},
 	}
+
+	// lock mutex for RunPowerShellCommand
+	mutex = &sync.Mutex{}
 )
 
 type ManagedDiskParameters struct {
@@ -131,12 +136,13 @@ type ManagedDiskParameters struct {
 	DiskName                string
 	EnableAsyncAttach       *bool
 	EnableBursting          *bool
+	PerformancePlus         *bool
 	FsType                  string
-	Incremental             bool
 	Location                string
 	LogicalSectorSize       int
 	MaxShares               int
 	NetworkAccessPolicy     string
+	PublicNetworkAccess     string
 	PerfProfile             string
 	SubscriptionID          string
 	ResourceGroup           string
@@ -162,6 +168,20 @@ func GetCachingMode(attributes map[string]string) (compute.CachingTypes, error) 
 
 	cachingMode, err = NormalizeCachingMode(cachingMode)
 	return compute.CachingTypes(cachingMode), err
+}
+
+// GetAttachDiskInitialDelay gttachDiskInitialDelay from attributes
+// return -1 if not found
+func GetAttachDiskInitialDelay(attributes map[string]string) int {
+	for k, v := range attributes {
+		switch strings.ToLower(k) {
+		case consts.AttachDiskInitialDelayField:
+			if v, err := strconv.Atoi(v); err == nil {
+				return v
+			}
+		}
+	}
+	return -1
 }
 
 // GetCloudProviderFromClient get Azure Cloud Provider
@@ -222,6 +242,11 @@ func GetCloudProviderFromClient(ctx context.Context, kubeClient *clientset.Clien
 			return nil, fmt.Errorf("no cloud config provided, error: %v", err)
 		}
 	} else {
+		// Location may be either upper case with spaces (e.g. "East US") or lower case without spaces (e.g. "eastus")
+		// Kubernetes does not allow whitespaces or upper case characters in label values, e.g. for topology keys
+		// ensure Kubernetes compatible format for Location by enforcing lowercase-no-space format
+		config.Location = strings.ToLower(strings.ReplaceAll(config.Location, " ", ""))
+
 		// disable disk related rate limit
 		config.DiskRateLimit = &azclients.RateLimitConfig{
 			CloudProviderRateLimit: false,
@@ -512,7 +537,7 @@ func NormalizeCachingMode(cachingMode v1.AzureDataDiskCachingMode) (v1.AzureData
 
 func NormalizeNetworkAccessPolicy(networkAccessPolicy string) (compute.NetworkAccessPolicy, error) {
 	if networkAccessPolicy == "" {
-		return compute.AllowAll, nil
+		return compute.NetworkAccessPolicy(networkAccessPolicy), nil
 	}
 	policy := compute.NetworkAccessPolicy(networkAccessPolicy)
 	for _, s := range compute.PossibleNetworkAccessPolicyValues() {
@@ -521,6 +546,19 @@ func NormalizeNetworkAccessPolicy(networkAccessPolicy string) (compute.NetworkAc
 		}
 	}
 	return "", fmt.Errorf("azureDisk - %s is not supported NetworkAccessPolicy. Supported values are %s", networkAccessPolicy, compute.PossibleNetworkAccessPolicyValues())
+}
+
+func NormalizePublicNetworkAccess(publicNetworkAccess string) (compute.PublicNetworkAccess, error) {
+	if publicNetworkAccess == "" {
+		return compute.PublicNetworkAccess(publicNetworkAccess), nil
+	}
+	access := compute.PublicNetworkAccess(publicNetworkAccess)
+	for _, s := range compute.PossiblePublicNetworkAccessValues() {
+		if access == s {
+			return access, nil
+		}
+	}
+	return "", fmt.Errorf("azureDisk - %s is not supported PublicNetworkAccess. Supported values are %s", publicNetworkAccess, compute.PossiblePublicNetworkAccessValues())
 }
 
 func NormalizeStorageAccountType(storageAccountType, cloud string, disableAzureStackCloud bool) (compute.DiskStorageAccountTypes, error) {
@@ -533,7 +571,6 @@ func NormalizeStorageAccountType(storageAccountType, cloud string, disableAzureS
 
 	sku := compute.DiskStorageAccountTypes(storageAccountType)
 	supportedSkuNames := compute.PossibleDiskStorageAccountTypesValues()
-	supportedSkuNames = append(supportedSkuNames, azureconstants.PremiumV2LRS)
 	if IsAzureStackCloud(cloud, disableAzureStackCloud) {
 		supportedSkuNames = []compute.DiskStorageAccountTypes{compute.StandardLRS, compute.PremiumLRS}
 	}
@@ -580,7 +617,6 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 
 	diskParams := ManagedDiskParameters{
 		DeviceSettings: make(map[string]string),
-		Incremental:    true, //true by default
 		Tags:           make(map[string]string),
 		VolumeContext:  parameters,
 	}
@@ -649,6 +685,8 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 			diskParams.PerfProfile = v
 		case consts.NetworkAccessPolicyField:
 			diskParams.NetworkAccessPolicy = v
+		case consts.PublicNetworkAccessField:
+			diskParams.PublicNetworkAccess = v
 		case consts.DiskAccessIDField:
 			diskParams.DiskAccessID = v
 		case consts.EnableBurstingField:
@@ -659,12 +697,18 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 			diskParams.UserAgent = v
 		case consts.EnableAsyncAttachField:
 			diskParams.VolumeContext[consts.EnableAsyncAttachField] = v
-		case consts.IncrementalField:
-			if v == "false" {
-				diskParams.Incremental = false
-			}
 		case consts.ZonedField:
 			// no op, only for backward compatibility with in-tree driver
+		case consts.PerformancePlusField:
+			value, err := strconv.ParseBool(v)
+			if err != nil {
+				return diskParams, fmt.Errorf("invalid %s: %s in storage class", consts.PerformancePlusField, v)
+			}
+			diskParams.PerformancePlus = &value
+		case consts.AttachDiskInitialDelayField:
+			if _, err = strconv.Atoi(v); err != nil {
+				return diskParams, fmt.Errorf("parse %s failed with error: %v", v, err)
+			}
 		default:
 			// accept all device settings params
 			// device settings need to start with azureconstants.DeviceSettingsKeyPrefix
@@ -676,9 +720,9 @@ func ParseDiskParameters(parameters map[string]string) (ManagedDiskParameters, e
 		}
 	}
 
-	if strings.EqualFold(diskParams.AccountType, string(azureconstants.PremiumV2LRS)) {
+	if strings.EqualFold(diskParams.AccountType, string(compute.PremiumV2LRS)) {
 		if diskParams.CachingMode != "" && !strings.EqualFold(string(diskParams.CachingMode), string(v1.AzureDataDiskCachingNone)) {
-			return diskParams, fmt.Errorf("cachingMode %s is not supported for %s", diskParams.CachingMode, azureconstants.PremiumV2LRS)
+			return diskParams, fmt.Errorf("cachingMode %s is not supported for %s", diskParams.CachingMode, compute.PremiumV2LRS)
 		}
 	}
 
@@ -764,7 +808,7 @@ func InsertDiskProperties(disk *compute.Disk, publishConext map[string]string) {
 }
 
 func SleepIfThrottled(err error, sleepSec int) {
-	if strings.Contains(strings.ToLower(err.Error()), strings.ToLower(consts.TooManyRequests)) || strings.Contains(strings.ToLower(err.Error()), consts.ClientThrottled) {
+	if err != nil && strings.Contains(strings.ToLower(err.Error()), strings.ToLower(consts.TooManyRequests)) || strings.Contains(strings.ToLower(err.Error()), consts.ClientThrottled) {
 		klog.Warningf("sleep %d more seconds, waiting for throttling complete", sleepSec)
 		time.Sleep(time.Duration(sleepSec) * time.Second)
 	}
@@ -783,4 +827,15 @@ func SetKeyValueInMap(m map[string]string, key, value string) {
 		}
 	}
 	m[key] = value
+}
+
+func RunPowershellCmd(command string, envs ...string) ([]byte, error) {
+	// only one powershell command can be executed at a time to avoid OOM
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	cmd := exec.Command("powershell", "-Mta", "-NoProfile", "-Command", command)
+	cmd.Env = append(os.Environ(), envs...)
+	klog.V(8).Infof("Executing command: %q", cmd.String())
+	return cmd.CombinedOutput()
 }

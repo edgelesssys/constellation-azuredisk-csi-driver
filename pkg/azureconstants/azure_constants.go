@@ -62,6 +62,7 @@ const (
 	MaxSharesField                = "maxshares"
 	MinimumDiskSizeGiB            = 1
 	NetworkAccessPolicyField      = "networkaccesspolicy"
+	PublicNetworkAccessField      = "publicnetworkaccess"
 	NotFound                      = "NotFound"
 	PerfProfileBasic              = "basic"
 	PerfProfileAdvanced           = "advanced"
@@ -98,6 +99,8 @@ const (
 	WriteAcceleratorEnabled       = "writeacceleratorenabled"
 	ZonedField                    = "zoned"
 	EnableAsyncAttachField        = "enableasyncattach"
+	PerformancePlusField          = "enableperformanceplus"
+	AttachDiskInitialDelayField   = "attachdiskinitialdelay"
 	TooManyRequests               = "TooManyRequests"
 	ClientThrottled               = "client throttled"
 	VolumeID                      = "volumeid"

@@ -21,7 +21,7 @@ Use `helm` to deploy the driver to your cluster:
 helm install azuredisk-csi-driver charts/edgeless/ --namespace kube-system
 ```
 
-See [helm configuration](../charts/README.md#V1-Parameters) for a detailed list on configuration options.
+See [helm configuration](./charts/README.md#V1-Parameters) for a detailed list on configuration options.
 
 Remove the driver using helm:
 
@@ -39,7 +39,8 @@ helm uninstall azuredisk-csi-driver -n kube-system
 - [Raw Block Volume](./deploy/example/rawblock)
 - [Volume Limits](./deploy/example/volumelimits)
 - [fsGroupPolicy](./deploy/example/fsgroup)
-- [Tune disk performance on Linux](./docs/perf-profiles.md)
+- [Workload identity](./docs/workload-identity.md)
+- [Advanced disk performance tuning (Preview)](./docs/perf-profiles.md)
 - Transparent disk encryption at node level
 - Disk integrity protection
 

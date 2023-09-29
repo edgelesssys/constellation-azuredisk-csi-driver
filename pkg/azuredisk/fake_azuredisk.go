@@ -39,7 +39,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -53,7 +53,6 @@ import (
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization/mockoptimization"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
-	"sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 )
 
@@ -101,10 +100,6 @@ func (s *fakeCryptMapper) GetDevicePath(volumeID string) (string, error) {
 	return s.deviceName, nil
 }
 
-func fakeEvalSymlinks(path string) (string, error) {
-	return path, nil
-}
-
 // FakeDriver defines an interface unit tests use to test either the v1 or v2 implementation of the Azure Disk CSI Driver.
 type FakeDriver interface {
 	CSIDriver
@@ -119,8 +114,8 @@ type FakeDriver interface {
 	setName(string)
 	setNodeID(string)
 	setVersion(version string)
-	getCloud() *provider.Cloud
-	setCloud(*provider.Cloud)
+	getCloud() *azure.Cloud
+	setCloud(*azure.Cloud)
 	getMounter() *mount.SafeFormatAndMount
 	setMounter(*mount.SafeFormatAndMount)
 	setPerfOptimizationEnabled(bool)
@@ -130,6 +125,7 @@ type FakeDriver interface {
 	checkDiskCapacity(context.Context, string, string, string, int) (bool, error)
 	checkDiskExists(ctx context.Context, diskURI string) (*compute.Disk, error)
 	getSnapshotInfo(string) (string, string, string, error)
+	waitForSnapshotCopy(context.Context, string, string, string, time.Duration, time.Duration) error
 	getSnapshotByID(context.Context, string, string, string, string) (*csi.Snapshot, error)
 	ensureMountPoint(string) (bool, error)
 	ensureBlockTargetFile(string) error
@@ -156,7 +152,6 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	driver.hostUtil = azureutils.NewFakeHostUtil()
 	driver.useCSIProxyGAInterface = true
 	driver.allowEmptyCloudConfig = true
-	driver.evalSymLinks = fakeEvalSymlinks
 	driver.getVolumeName = func(s string) (string, error) { return s, nil }
 	driver.cryptMapper = &fakeCryptMapper{}
 
@@ -164,16 +159,16 @@ func newFakeDriverV1(t *testing.T) (*fakeDriverV1, error) {
 	defer ctrl.Finish()
 
 	driver.cloud = azure.GetTestCloud(ctrl)
-	mounter, err := mounter.NewSafeMounter(driver.useCSIProxyGAInterface)
+	mounter, err := mounter.NewSafeMounter(driver.enableWindowsHostProcess, driver.useCSIProxyGAInterface)
 	if err != nil {
 		return nil, err
 	}
 
 	driver.mounter = mounter
 
-	cache, err := azcache.NewTimedcache(time.Minute, func(key string) (interface{}, error) {
+	cache, err := azcache.NewTimedCache(time.Minute, func(key string) (interface{}, error) {
 		return nil, nil
-	})
+	}, false)
 	if err != nil {
 		return nil, err
 	}

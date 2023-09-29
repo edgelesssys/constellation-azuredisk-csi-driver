@@ -37,7 +37,6 @@ package azuredisk
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -47,6 +46,7 @@ import (
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
+	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
@@ -173,10 +173,6 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 
 	// [Edgeless] Map the device as a crypt device, creating a new LUKS partition if needed
 	fstype, integrity := cryptmapper.IsIntegrityFS(fstype)
-	devicePathReal, err := d.evalSymLinks(source)
-	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("could not evaluate device path for device %q: %v", devicePathReal, err))
-	}
 	devicePath, err := d.cryptMapper.OpenCryptDevice(ctx, source, diskName, integrity)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("NodeStageVolume failed on volume %v to %s, open crypt device failed: %v", source, target, err))
@@ -301,10 +297,7 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 		}
-		source, err = d.evalSymLinks(filepath.Join("/dev/mapper", diskName))
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "NodePublishVolume: can not evaluate source path: %v", err)
-		}
+		source := filepath.Join("/dev/mapper", diskName)
 
 		klog.V(2).Infof("NodePublishVolume [block]: found device path %s", source)
 		err = d.ensureBlockTargetFile(target)
@@ -410,10 +403,11 @@ func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 			}
 		} else {
 			if runtime.GOOS == "windows" && d.cloud.UseInstanceMetadata && d.cloud.Metadata != nil {
-				metadata, err := d.cloud.Metadata.GetMetadata(azcache.CacheReadTypeDefault)
-				if err == nil && metadata.Compute != nil {
+				var metadata *azure.InstanceMetadata
+				metadata, err = d.cloud.Metadata.GetMetadata(azcache.CacheReadTypeDefault)
+				if err == nil && metadata != nil && metadata.Compute != nil {
 					instanceType = metadata.Compute.VMSize
-					klog.V(5).Infof("NodeGetInfo: nodeName(%s), VM Size(%s)", d.NodeID, instanceType)
+					klog.V(2).Infof("NodeGetInfo: nodeName(%s), VM Size(%s)", d.NodeID, instanceType)
 				}
 			} else {
 				instances, ok := d.cloud.Instances()
@@ -440,8 +434,30 @@ func (d *Driver) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (
 		maxDataDiskCount = getMaxDataDiskCount(instanceType)
 	}
 
+	nodeID := d.NodeID
+	if d.getNodeIDFromIMDS && d.cloud.UseInstanceMetadata && d.cloud.Metadata != nil {
+		metadata, err := d.cloud.Metadata.GetMetadata(azcache.CacheReadTypeDefault)
+		if err == nil && metadata != nil && metadata.Compute != nil {
+			klog.V(2).Infof("NodeGetInfo: NodeID(%s), metadata.Compute.Name(%s)", d.NodeID, metadata.Compute.Name)
+			if metadata.Compute.Name != "" {
+				if metadata.Compute.VMScaleSetName != "" {
+					id, err := getVMSSInstanceName(metadata.Compute.Name)
+					if err != nil {
+						klog.Errorf("getVMSSInstanceName failed with %v", err)
+					} else {
+						nodeID = id
+					}
+				} else {
+					nodeID = metadata.Compute.Name
+				}
+			}
+		} else {
+			klog.Warningf("get instance type(%s) failed with: %v", d.NodeID, err)
+		}
+	}
+
 	return &csi.NodeGetInfoResponse{
-		NodeId:             d.NodeID,
+		NodeId:             nodeID,
 		MaxVolumesPerNode:  maxDataDiskCount,
 		AccessibleTopology: topology,
 	}, nil
@@ -605,7 +621,7 @@ func (d *Driver) ensureMountPoint(target string) (bool, error) {
 
 	if !notMnt {
 		// testing original mount point, make sure the mount link is valid
-		_, err := ioutil.ReadDir(target)
+		_, err := os.ReadDir(target)
 		if err == nil {
 			klog.V(2).Infof("already mounted to target %s", target)
 			return !notMnt, nil

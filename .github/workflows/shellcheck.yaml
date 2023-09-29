@@ -10,16 +10,14 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3.1.0
-
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
-        env:
-           SHELLCHECK_OPTS: -e SC2034
-        with:
-          severity: warning
-          check_together: 'yes'
-          disable_matcher: false
-          ignore_paths: vendor release-tools hack
-          format: gcc
+    - uses: actions/checkout@v4
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@master
+      env:
+         SHELLCHECK_OPTS: -e SC2034
+      with:
+        severity: warning
+        check_together: 'yes'
+        disable_matcher: false
+        ignore_paths: vendor release-tools hack
+        format: gcc

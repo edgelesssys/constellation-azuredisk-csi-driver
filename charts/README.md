@@ -32,7 +32,8 @@
 - [add the Chart repository](#add-the-helm-chart-repository)
 
 ### Tips
- - schedule controller running on control plane node: `--set controller.runOnControlPlane=true`
+
+- schedule controller running on control plane node: `--set controller.runOnControlPlane=true`
 - set replica of controller as `1`: `--set controller.replicas=1`
 - specify different cloud config secret for the driver:
   - `--set controller.cloudConfigSecretName`
@@ -70,7 +71,7 @@ helm repo update azuredisk-csi-driver
 ### install a specific version
 
 ```console
-helm install azuredisk-csi-driver azuredisk-csi-driver/azuredisk-csi-driver --namespace kube-system --version v1.27.1
+helm install azuredisk-csi-driver azuredisk-csi-driver/azuredisk-csi-driver --namespace kube-system --version v1.29.0
 ```
 
 ### install on Azure Stack
@@ -118,6 +119,7 @@ The following table lists the configurable parameters of the latest Azure Disk C
 
 | Parameter                                         | Description                                                | Default                                                      |
 | ------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| `azureCredentialFileConfigMap`                    | alternative ConfigMap name for the credentials file        | `azure-cred-file` |
 | `driver.name`                                     | alternative driver name                                    | `disk.csi.azure.com` |
 | `driver.customUserAgent`                          | custom userAgent                                           | `` |
 | `driver.userAgentSuffix`                          | userAgent suffix                                           | `OSS-helm` |
@@ -129,19 +131,19 @@ The following table lists the configurable parameters of the latest Azure Disk C
 | `image.azuredisk.tag`                             | azuredisk-csi-driver docker image tag                      | ``                                                       |
 | `image.azuredisk.pullPolicy`                      | azuredisk-csi-driver image pull policy                     | `IfNotPresent`                                                 |
 | `image.csiProvisioner.repository`                 | csi-provisioner docker image                               | `/oss/kubernetes-csi/csi-provisioner`         |
-| `image.csiProvisioner.tag`                        | csi-provisioner docker image tag                           | `v3.3.0`                                                       |
+| `image.csiProvisioner.tag`                        | csi-provisioner docker image tag                           | `v3.5.0`                                                       |
 | `image.csiProvisioner.pullPolicy`                 | csi-provisioner image pull policy                          | `IfNotPresent`                                                 |
 | `image.csiAttacher.repository`                    | csi-attacher docker image                                  | `/oss/kubernetes-csi/csi-attacher`            |
-| `image.csiAttacher.tag`                           | csi-attacher docker image tag                              | `v4.0.0`                                                       |
+| `image.csiAttacher.tag`                           | csi-attacher docker image tag                              | `v4.3.0`                                                       |
 | `image.csiAttacher.pullPolicy`                    | csi-attacher image pull policy                             | `IfNotPresent`                                                 |
 | `image.csiResizer.repository`                     | csi-resizer docker image                                   | `/oss/kubernetes-csi/csi-resizer`             |
-| `image.csiResizer.tag`                            | csi-resizer docker image tag                               | `v1.6.0`                                                       |
+| `image.csiResizer.tag`                            | csi-resizer docker image tag                               | `v1.8.0`                                                       |
 | `image.csiResizer.pullPolicy`                     | csi-resizer image pull policy                              | `IfNotPresent`                                                 |
 | `image.livenessProbe.repository`                  | liveness-probe docker image                                | `/oss/kubernetes-csi/livenessprobe`           |
-| `image.livenessProbe.tag`                         | liveness-probe docker image tag                            | `v2.8.0`                                                       |
+| `image.livenessProbe.tag`                         | liveness-probe docker image tag                            | `v2.10.0`                                                       |
 | `image.livenessProbe.pullPolicy`                  | liveness-probe image pull policy                           | `IfNotPresent`                                                 |
 | `image.nodeDriverRegistrar.repository`            | csi-node-driver-registrar docker image                     | `/oss/kubernetes-csi/csi-node-driver-registrar` |
-| `image.nodeDriverRegistrar.tag`                   | csi-node-driver-registrar docker image tag                 | `v2.6.2`                                                       |
+| `image.nodeDriverRegistrar.tag`                   | csi-node-driver-registrar docker image tag                 | `v2.8.0`                                                       |
 | `image.nodeDriverRegistrar.pullPolicy`            | csi-node-driver-registrar image pull policy                | `IfNotPresent`                                                 |
 | `imagePullSecrets`                                | Specify docker-registry secret names as an array           | [] (does not add image pull secrets to deployed pods)        |                                       |
 | `serviceAccount.create`                           | whether create service account of csi-azuredisk-controller, csi-azuredisk-node, and snapshot-controller| `true`                                                    |
@@ -155,6 +157,9 @@ The following table lists the configurable parameters of the latest Azure Disk C
 | `controller.cloudConfigSecretNamespace`           | cloud config secret namespace of controller driver         | `kube-system`
 | `controller.allowEmptyCloudConfig`                | Whether allow running controller driver without cloud config          | `false`
 | `controller.enableTrafficManager`                 | Whether enable [traffic manager proxy](https://github.com/Azure/aks-traffic-manager) sidecar          | `false`
+| `controller.otelTracing.enabled`                  | whether enable opentelemetry tracing                       | `false`                                                        |
+| `controller.otelTracing.otelServiceName`          | name of the service associated with the produced traces          | `csi-azuredisk-controller`                               |
+| `controller.otelTracing.otelExporterEndpoint`     | opentelemetry-compatible endpoint where traces are sent          | `"http://localhost:4317"`                                |
 | `controller.trafficManagerPort`                   | default [traffic manager proxy](https://github.com/Azure/aks-traffic-manager) port number          | `7788`
 | `controller.replicas`                             | the replicas of csi-azuredisk-controller                   | `2`                                                            |
 | `controller.metricsPort`                          | metrics port of csi-azuredisk-controller                   | `29604`                                                        |
@@ -192,18 +197,18 @@ The following table lists the configurable parameters of the latest Azure Disk C
 | `controller.resources.azuredisk.requests.memory`      | azuredisk memory requests                | 20Mi                                                           |
 | `node.cloudConfigSecretName`                      | cloud config secret name of node driver                    | `azure-cloud-provider`
 | `node.cloudConfigSecretNamespace`                 | cloud config secret namespace of node driver               | `kube-system`
-| `node.supportZone`                                | Whether get zone info in NodeGetInfo on the node (requires instance metadata support)               | `true`
+| `node.supportZone`                                | Whether getting zone info in NodeGetInfo on the node (requires instance metadata support)               | `true`
+| `node.getNodeIDFromIMDS`                          | Whether getting NodeID from IMDS on the node (requires instance metadata support)               | `false`
 | `node.allowEmptyCloudConfig`                      | Whether allow running node driver without cloud config               | `true`
 | `node.maxUnavailable`                             | `maxUnavailable` value of driver node daemonset            | `1`
-| `node.metricsPort`                                | metrics port of csi-azuredisk-node                         |`29605`                                                        |
 | `node.livenessProbe.healthPort`                   | health check port for liveness probe                       | `29603` |
 | `node.logLevel`                                   | node driver log level                                      |`5`                                                           |
 | `snapshot.enabled`                                | whether enable snapshot feature                            | `false`                                                        |
 | `snapshot.image.csiSnapshotter.repository`        | csi-snapshotter docker image                               | `/oss/kubernetes-csi/csi-snapshotter`         |
-| `snapshot.image.csiSnapshotter.tag`               | csi-snapshotter docker image tag                           | `v5.0.1`                                                       |
+| `snapshot.image.csiSnapshotter.tag`               | csi-snapshotter docker image tag                           | `v6.2.2`                                                       |
 | `snapshot.image.csiSnapshotter.pullPolicy`        | csi-snapshotter image pull policy                          | `IfNotPresent`                                                 |
 | `snapshot.image.csiSnapshotController.repository` | snapshot-controller docker image                           | `/oss/kubernetes-csi/snapshot-controller`     |
-| `snapshot.image.csiSnapshotController.tag`        | snapshot-controller docker image tag                       | `v5.0.1`                                                      |
+| `snapshot.image.csiSnapshotController.tag`        | snapshot-controller docker image tag                       | `v6.2.2`                                                      |
 | `snapshot.image.csiSnapshotController.pullPolicy` | snapshot-controller image pull policy                      | `IfNotPresent`                                                 |
 | `snapshot.snapshotController.name`                | snapshot controller name                                   | `csi-snapshot-controller`                                                           |
 | `snapshot.snapshotController.replicas`            | the replicas of snapshot-controller                        | `2`                                                            |
@@ -218,6 +223,7 @@ The following table lists the configurable parameters of the latest Azure Disk C
 | `linux.dsName`                                    | name of driver daemonset on linux                          |`csi-azuredisk-node`                                                         |
 | `linux.kubelet`                                   | configure kubelet directory path on Linux agent node       | `/var/lib/kubelet`                                                |
 | `linux.getNodeInfoFromLabels`                     | get node info from node labels instead of IMDS on Linux agent node       | `false`                                                |
+| `linux.enableRegistrationProbe`                   | enable [kubelet-registration-probe](https://github.com/kubernetes-csi/node-driver-registrar#health-check-with-an-exec-probe) on Linux driver config     | `true`
 | `linux.distro`                                    | configure ssl certificates for different Linux distribution(available values: `debian`, `fedora`)                  | `debian`                                                |
 | `linux.tolerations`                               | linux node driver tolerations                              |                                                              |
 | `linux.affinity`                                  | linux node pod affinity                                     | `{}`                                                             |
@@ -225,6 +231,9 @@ The following table lists the configurable parameters of the latest Azure Disk C
 | `linux.hostNetwork`                               | `hostNetwork` setting on linux node driver(could be disabled if perfProfile is `none`)                            | `true`                                                            | `true`, `false`
 | `linux.labels`                                    | linux node daemonset extra labels                     | `{}`
 | `linux.annotations`                               | linux node daemonset extra annotations                | `{}`
+| `linux.otelTracing.enabled`                       | whether enable opentelemetry tracing                  | `false`                                                   |
+| `linux.otelTracing.otelServiceName`               | name of the service associated with the produced traces      | `csi-azuredisk-node`                               |
+| `linux.otelTracing.otelExporterEndpoint`          | opentelemetry-compatible endpoint where traces are sent      | `"http://localhost:4317"`                          |
 | `linux.podLabels`                                 | linux node pods extra labels                          | `{}`
 | `linux.podAnnotations`                            | linux node pods extra annotations                     | `{}`
 | `linux.resources.livenessProbe.limits.memory`          | liveness-probe memory limits                          | 100Mi                                                          |
@@ -240,11 +249,15 @@ The following table lists the configurable parameters of the latest Azure Disk C
 | `windows.dsName`                                  | name of driver daemonset on windows                        |`csi-azuredisk-node-win`                                                         |
 | `windows.kubelet`                                 | configure kubelet directory path on Windows agent node     | `'C:\var\lib\kubelet'`                                            |
 | `windows.getNodeInfoFromLabels`                   | get node info from node labels instead of IMDS on windows agent node       | `false`                                                |
+| `windows.enableRegistrationProbe`                 | enable [kubelet-registration-probe](https://github.com/kubernetes-csi/node-driver-registrar#health-check-with-an-exec-probe) on windows driver config     | `true`
 | `windows.tolerations`                             | windows node driver tolerations                            |                                                              |
 | `windows.affinity`                                | windows node pod affinity                                     | `{}`                                                             |
 | `windows.nodeSelector`                            | windows node pod node selector                                | `{}`                                                             |
 | `windows.labels`                                  | windows node daemonset extra labels                     | `{}`
 | `windows.annotations`                             | windows node daemonset extra annotations                | `{}`
+| `windows.otelTracing.enabled`                     | whether enable opentelemetry tracing                    | `false`                                                      |
+| `windows.otelTracing.otelServiceName`             | name of the service associated with the produced traces          | `csi-azuredisk-node-win`                            |
+| `windows.otelTracing.otelExporterEndpoint`        | opentelemetry-compatible endpoint where traces are sent          | `"http://localhost:4317"`                           |
 | `windows.podLabels`                               | windows node pods extra labels                          | `{}`
 | `windows.podAnnotations`                          | windows node pods extra annotations                     | `{}`
 | `windows.resources.livenessProbe.limits.memory`          | liveness-probe memory limits                          | 150Mi                                                          |
@@ -355,7 +368,8 @@ In addition to the parameters supported by the V1 driver, Azure Disk CSI driver 
 | `storageClasses.storageClassNames.premiumLRS` | The `StorageClass` name for `Premium_LRS` disks | `azuredisk-premium-sdd-lrs` |
 | `storageClasses.storageClassNames.premiumZRS` | The `StorageClass` name for `Premium_ZRS` disks | `azuredisk-premium-sdd-zrs` |
 | `storageClasses.storageClassNames.ultraSSDLRS` | The `StorageClass` name for `UltraSSD_LRS` disks | `azuredisk-ultra-sdd-lrs` |
-
+| `workloadIdentity.clientID` | client ID of workload identity | ''
+| `workloadIdentity.tenantID` | [optional] If the AAD application or user-assigned managed identity is not in the same tenant as the cluster then set tenantID with the AAD application or user-assigned managed identity tenant ID | ''
 
 ## Troubleshooting
 
