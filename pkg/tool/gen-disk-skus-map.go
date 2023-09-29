@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
-	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
+	compute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/azuredisk-csi-driver/pkg/optimization"
@@ -101,7 +101,7 @@ import (
 	}
 	defer diskSkusFullJSON.Close()
 
-	byteValue, _ := ioutil.ReadAll(diskSkusFullJSON)
+	byteValue, _ := io.ReadAll(diskSkusFullJSON)
 
 	err = json.Unmarshal([]byte(byteValue), &resources)
 	if err != nil {
@@ -196,7 +196,7 @@ import (
 	appendWithErrCheck(&sb, ")")
 	appendWithErrCheck(&sb, "\n")
 
-	err = ioutil.WriteFile(skusFilePath, []byte(sb.String()), 0644)
+	err = os.WriteFile(skusFilePath, []byte(sb.String()), 0644)
 	if err != nil {
 		klog.Errorf("Could write file. Error: %v, FilePath: %s", err, skusFilePath)
 	}

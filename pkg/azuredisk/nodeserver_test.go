@@ -47,7 +47,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -1068,18 +1068,17 @@ func TestNodeExpandVolume(t *testing.T) {
 	invalidPathErr := testutil.TestError{
 		DefaultError: status.Error(codes.NotFound, "failed to determine device path for volumePath [./test]: path \"./test\" does not exist"),
 	}
-
 	blockSizeErr := testutil.TestError{
 		DefaultError: status.Error(codes.Internal, "could not get size of block volume at path test: error when getting size of block volume at path test: output: , err: exit status 1"),
-		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
+		WindowsError: status.Errorf(codes.NotFound, "error getting volume from mount. cmd: (Get-Item -Path $Env:mount).Target, output: , error: <nil>"),
 	}
 	resizeErr := testutil.TestError{
 		DefaultError: status.Errorf(codes.Internal, "could not resize volume \"test\" (\"test\"):  resize of device test failed: %v. resize2fs output: ", notFoundErr),
-		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
+		WindowsError: status.Errorf(codes.NotFound, "error getting volume from mount. cmd: (Get-Item -Path $Env:mount).Target, output: , error: <nil>"),
 	}
 	sizeTooSmallErr := testutil.TestError{
 		DefaultError: status.Errorf(codes.Internal, "resize requested for %v, but after resizing volume size was %v", volumehelper.RoundUpGiB(stdCapacityRange.RequiredBytes), volumehelper.RoundUpGiB(stdCapacityRange.RequiredBytes/2)),
-		WindowsError: status.Errorf(codes.NotFound, "error getting the volume for the mount %s, internal error error getting volume from mount. cmd: (Get-Item -Path %s).Target, output: , error: <nil>", targetTest, targetTest),
+		WindowsError: status.Errorf(codes.NotFound, "error getting volume from mount. cmd: (Get-Item -Path $Env:mount).Target, output: , error: <nil>"),
 	}
 
 	notFoundErrAction := func() ([]byte, []byte, error) {

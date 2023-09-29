@@ -37,12 +37,12 @@ package azuredisk
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2022-08-01/compute"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 
 	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
@@ -66,7 +66,6 @@ import (
 	volumehelper "sigs.k8s.io/azuredisk-csi-driver/pkg/util"
 	azcache "sigs.k8s.io/cloud-provider-azure/pkg/cache"
 	azurecloudconsts "sigs.k8s.io/cloud-provider-azure/pkg/consts"
-	"sigs.k8s.io/cloud-provider-azure/pkg/provider"
 	azure "sigs.k8s.io/cloud-provider-azure/pkg/provider"
 )
 
@@ -95,6 +94,9 @@ type DriverOptions struct {
 	AttachDetachInitialDelayInMs int64
 	VMSSCacheTTLInSeconds        int64
 	VMType                       string
+	EnableWindowsHostProcess     bool
+	GetNodeIDFromIMDS            bool
+	EnableOtelTracing            bool
 	KMSAddr                      string
 }
 
@@ -148,8 +150,10 @@ type DriverCore struct {
 	vmssCacheTTLInSeconds        int64
 	attachDetachInitialDelayInMs int64
 	vmType                       string
+	enableWindowsHostProcess     bool
+	getNodeIDFromIMDS            bool
+	enableOtelTracing            bool
 	getVolumeName                func(string) (string, error)
-	evalSymLinks                 func(string) (string, error)
 	cryptMapper                  cryptMapper
 }
 
@@ -158,7 +162,7 @@ type Driver struct {
 	DriverCore
 	volumeLocks *volumehelper.VolumeLocks
 	// a timed cache GetDisk throttling
-	getDiskThrottlingCache *azcache.TimedCache
+	getDiskThrottlingCache azcache.Resource
 }
 
 // newDriverV1 Creates a NewCSIDriver object. Assumes vendor version is equal to driver version &
@@ -189,23 +193,22 @@ func newDriverV1(options *DriverOptions) *Driver {
 	driver.trafficManagerPort = options.TrafficManagerPort
 	driver.vmssCacheTTLInSeconds = options.VMSSCacheTTLInSeconds
 	driver.vmType = options.VMType
+	driver.enableWindowsHostProcess = options.EnableWindowsHostProcess
+	driver.getNodeIDFromIMDS = options.GetNodeIDFromIMDS
+	driver.enableOtelTracing = options.EnableOtelTracing
 	driver.volumeLocks = volumehelper.NewVolumeLocks()
 	driver.ioHandler = azureutils.NewOSIOHandler()
 	driver.hostUtil = hostutil.NewHostUtil()
 
 	// [Edgeless] set up dm-crypt
-	driver.evalSymLinks = filepath.EvalSymlinks
 	driver.getVolumeName = util.GetVolumeName
-	driver.cryptMapper = cryptmapper.New(
-		cryptKms.NewConstellationKMS(options.KMSAddr),
-		&cryptmapper.CryptDevice{},
-	)
+	driver.cryptMapper = cryptmapper.New(cryptKms.NewConstellationKMS(options.KMSAddr))
 
 	topologyKey = fmt.Sprintf("topology.%s/zone", driver.Name)
 
-	cache, err := azcache.NewTimedcache(5*time.Minute, func(key string) (interface{}, error) {
+	cache, err := azcache.NewTimedCache(5*time.Minute, func(key string) (interface{}, error) {
 		return nil, nil
-	})
+	}, false)
 	if err != nil {
 		klog.Fatalf("%v", err)
 	}
@@ -277,7 +280,7 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 		}
 	}
 
-	d.mounter, err = mounter.NewSafeMounter(d.useCSIProxyGAInterface)
+	d.mounter, err = mounter.NewSafeMounter(d.enableWindowsHostProcess, d.useCSIProxyGAInterface)
 	if err != nil {
 		klog.Fatalf("Failed to get safe mounter. Error: %v", err)
 	}
@@ -311,7 +314,7 @@ func (d *Driver) Run(endpoint, kubeconfig string, disableAVSetNodes, testingMock
 
 	s := csicommon.NewNonBlockingGRPCServer()
 	// Driver d act as IdentityServer, ControllerServer and NodeServer
-	s.Start(endpoint, d, d, d, testingMock)
+	s.Start(endpoint, d, d, d, testingMock, d.enableOtelTracing)
 	s.Wait()
 }
 
@@ -405,12 +408,12 @@ func (d *DriverCore) setVersion(version string) {
 }
 
 // getCloud returns the value of the cloud field. It is intended for use with unit tests.
-func (d *DriverCore) getCloud() *provider.Cloud {
+func (d *DriverCore) getCloud() *azure.Cloud {
 	return d.cloud
 }
 
 // setCloud sets the cloud field. It is intended for use with unit tests.
-func (d *DriverCore) setCloud(cloud *provider.Cloud) {
+func (d *DriverCore) setCloud(cloud *azure.Cloud) {
 	d.cloud = cloud
 }
 
@@ -446,6 +449,53 @@ func (d *DriverCore) getNodeInfo() *optimization.NodeInfo {
 
 func (d *DriverCore) getHostUtil() hostUtil {
 	return d.hostUtil
+}
+
+// getSnapshotCopyCompletionPercent returns the completion percent of copy snapshot
+func (d *DriverCore) getSnapshotCopyCompletionPercent(ctx context.Context, subsID, resourceGroup, copySnapshotName string) (float64, error) {
+	copySnapshot, rerr := d.cloud.SnapshotsClient.Get(ctx, subsID, resourceGroup, copySnapshotName)
+	if rerr != nil {
+		return 0.0, rerr.Error()
+	}
+
+	if copySnapshot.SnapshotProperties == nil || copySnapshot.SnapshotProperties.CompletionPercent == nil {
+		return 0.0, fmt.Errorf("copy snapshot(%s) under rg(%s) has no SnapshotProperties or CompletionPercent is nil", copySnapshotName, resourceGroup)
+	}
+
+	return *copySnapshot.SnapshotProperties.CompletionPercent, nil
+}
+
+// waitForSnapshotCopy wait for copy incremental snapshot to a new region until completionPercent is 100.0
+func (d *DriverCore) waitForSnapshotCopy(ctx context.Context, subsID, resourceGroup, copySnapshotName string, intervel, timeout time.Duration) error {
+	completionPercent, err := d.getSnapshotCopyCompletionPercent(ctx, subsID, resourceGroup, copySnapshotName)
+	if err != nil {
+		return err
+	}
+
+	if completionPercent >= float64(100.0) {
+		klog.V(2).Infof("copy snapshot(%s) under rg(%s) complete", copySnapshotName, resourceGroup)
+		return nil
+	}
+
+	timeTick := time.Tick(intervel)
+	timeAfter := time.After(timeout)
+	for {
+		select {
+		case <-timeTick:
+			completionPercent, err = d.getSnapshotCopyCompletionPercent(ctx, subsID, resourceGroup, copySnapshotName)
+			if err != nil {
+				return err
+			}
+
+			if completionPercent >= float64(100.0) {
+				klog.V(2).Infof("copy snapshot(%s) under rg(%s) complete", copySnapshotName, resourceGroup)
+				return nil
+			}
+			klog.V(2).Infof("copy snapshot(%s) under rg(%s) completionPercent: %f", copySnapshotName, resourceGroup, completionPercent)
+		case <-timeAfter:
+			return fmt.Errorf("timeout waiting for copy snapshot(%s) under rg(%s)", copySnapshotName, resourceGroup)
+		}
+	}
 }
 
 // getNodeInfoFromLabels get zone, instanceType from node labels
@@ -486,13 +536,27 @@ func getDefaultDiskMBPSReadWrite(requestGiB int) int {
 	bandwidth := azurecloudconsts.DefaultDiskMBpsReadWrite
 	iops := getDefaultDiskIOPSReadWrite(requestGiB)
 	if iops/256 > bandwidth {
-		bandwidth = int(util.RoundUpSize(int64(iops), 256))
+		bandwidth = int(volumehelper.RoundUpSize(int64(iops), 256))
 	}
 	if bandwidth > iops/4 {
-		bandwidth = int(util.RoundUpSize(int64(iops), 4))
+		bandwidth = int(volumehelper.RoundUpSize(int64(iops), 4))
 	}
 	if bandwidth > 4000 {
 		bandwidth = 4000
 	}
 	return bandwidth
+}
+
+// getVMSSInstanceName get instance name from vmss compute name, e.g. "aks-agentpool-20657377-vmss_2" -> "aks-agentpool-20657377-vmss000002"
+func getVMSSInstanceName(computeName string) (string, error) {
+	names := strings.Split(computeName, "_")
+	if len(names) != 2 {
+		return "", fmt.Errorf("invalid vmss compute name: %s", computeName)
+	}
+
+	instanceID, err := strconv.Atoi(names[1])
+	if err != nil {
+		return "", fmt.Errorf("parsing vmss compute name(%s) failed with %v", computeName, err)
+	}
+	return fmt.Sprintf("%s%06s", names[0], strconv.FormatInt(int64(instanceID), 36)), nil
 }

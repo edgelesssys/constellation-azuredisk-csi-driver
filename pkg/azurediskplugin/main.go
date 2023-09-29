@@ -59,12 +59,13 @@ var (
 	endpoint                     = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	nodeID                       = flag.String("nodeid", "", "node id")
 	version                      = flag.Bool("version", false, "Print the version and exit.")
-	metricsAddress               = flag.String("metrics-address", "0.0.0.0:29604", "export the metrics")
+	metricsAddress               = flag.String("metrics-address", "", "export the metrics")
 	kubeconfig                   = flag.String("kubeconfig", "", "Absolute path to the kubeconfig file. Required only when running out of cluster.")
 	driverName                   = flag.String("drivername", consts.DefaultDriverName, "name of the driver")
 	volumeAttachLimit            = flag.Int64("volume-attach-limit", -1, "maximum number of attachable volumes per node")
 	supportZone                  = flag.Bool("support-zone", true, "boolean flag to get zone info in NodeGetInfo")
 	getNodeInfoFromLabels        = flag.Bool("get-node-info-from-labels", false, "boolean flag to get zone info from node labels in NodeGetInfo")
+	getNodeIDFromIMDS            = flag.Bool("get-nodeid-from-imds", false, "boolean flag to get NodeID from IMDS")
 	disableAVSetNodes            = flag.Bool("disable-avset-nodes", false, "disable DisableAvailabilitySetNodes in cloud config for controller")
 	vmType                       = flag.String("vm-type", "", "type of agent node. available values: vmss, standard")
 	enablePerfOptimization       = flag.Bool("enable-perf-optimization", false, "boolean flag to enable disk perf optimization")
@@ -84,6 +85,8 @@ var (
 	attachDetachInitialDelayInMs = flag.Int64("attach-detach-initial-delay-ms", 1000, "initial delay in milliseconds for batch disk attach/detach")
 	enableTrafficManager         = flag.Bool("enable-traffic-manager", false, "boolean flag to enable traffic manager")
 	trafficManagerPort           = flag.Int64("traffic-manager-port", 7788, "default traffic manager port")
+	enableWindowsHostProcess     = flag.Bool("enable-windows-host-process", false, "enable windows host process")
+	enableOtelTracing            = flag.Bool("enable-otel-tracing", false, "If set, enable opentelemetry tracing for the driver. The tracing is disabled by default. Configure the exporter endpoint with OTEL_EXPORTER_OTLP_ENDPOINT and other env variables, see https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#general-sdk-configuration.")
 )
 
 func main() {
@@ -108,6 +111,20 @@ func main() {
 }
 
 func handle() {
+	// Start tracing as soon as possible
+	if *enableOtelTracing {
+		exporter, err := azuredisk.InitOtelTracing()
+		if err != nil {
+			klog.Fatalf("Failed to initialize otel tracing: %v", err)
+		}
+		// Exporter will flush traces on shutdown
+		defer func() {
+			if err := exporter.Shutdown(context.Background()); err != nil {
+				klog.Errorf("Could not shutdown otel exporter: %v", err)
+			}
+		}()
+	}
+
 	driverOptions := azuredisk.DriverOptions{
 		NodeID:                       *nodeID,
 		DriverName:                   *driverName,
@@ -132,6 +149,9 @@ func handle() {
 		AttachDetachInitialDelayInMs: *attachDetachInitialDelayInMs,
 		VMSSCacheTTLInSeconds:        *vmssCacheTTLInSeconds,
 		VMType:                       *vmType,
+		EnableWindowsHostProcess:     *enableWindowsHostProcess,
+		GetNodeIDFromIMDS:            *getNodeIDFromIMDS,
+		EnableOtelTracing:            *enableOtelTracing,
 		KMSAddr:                      *kmsAddr,
 	}
 	driver := azuredisk.NewDriver(&driverOptions)
@@ -143,6 +163,9 @@ func handle() {
 }
 
 func exportMetrics() {
+	if *metricsAddress == "" {
+		return
+	}
 	l, err := net.Listen("tcp", *metricsAddress)
 	if err != nil {
 		klog.Warningf("failed to get listener for metrics endpoint: %v", err)

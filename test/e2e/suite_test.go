@@ -17,7 +17,6 @@ limitations under the License.
 package e2e
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -59,6 +58,7 @@ var (
 	isWindowsCluster          = os.Getenv(testWindowsEnvVar) != ""
 	winServerVer              = os.Getenv(testWinServerVerEnvVar)
 	isAzureStackCloud         = strings.EqualFold(os.Getenv(cloudNameEnvVar), "AZURESTACKCLOUD")
+	isWindowsHPCDeployment    = strings.EqualFold(os.Getenv("WINDOWS_USE_HOST_PROCESS_CONTAINERS"), "true")
 	location                  string
 	supportsZRS               bool
 	supportsDynamicResize     bool
@@ -71,7 +71,7 @@ type testCmd struct {
 	endLog   string
 }
 
-var _ = ginkgo.BeforeSuite(func() {
+var _ = ginkgo.BeforeSuite(func(ctx ginkgo.SpecContext) {
 	log.Println(driver.AzureDriverNameVar, os.Getenv(driver.AzureDriverNameVar), fmt.Sprintf("%v", isUsingInTreeVolumePlugin))
 	log.Println(testMigrationEnvVar, os.Getenv(testMigrationEnvVar), fmt.Sprintf("%v", isTestingMigration))
 	log.Println(testWindowsEnvVar, os.Getenv(testWindowsEnvVar), fmt.Sprintf("%v", isWindowsCluster))
@@ -93,7 +93,7 @@ var _ = ginkgo.BeforeSuite(func() {
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		azureClient, err := azure.GetAzureClient(creds.Cloud, creds.SubscriptionID, creds.AADClientID, creds.TenantID, creds.AADClientSecret)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		_, err = azureClient.EnsureResourceGroup(context.Background(), creds.ResourceGroup, creds.Location, nil)
+		_, err = azureClient.EnsureResourceGroup(ctx, creds.ResourceGroup, creds.Location, nil)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		location = creds.Location
@@ -162,7 +162,7 @@ var _ = ginkgo.BeforeSuite(func() {
 	}
 })
 
-var _ = ginkgo.AfterSuite(func() {
+var _ = ginkgo.AfterSuite(func(ctx ginkgo.SpecContext) {
 	// Default storage driver configuration is CSI. Freshly built
 	// CSI driver is installed for that case.
 	if isTestingMigration || isUsingInTreeVolumePlugin {
@@ -347,6 +347,8 @@ func convertToPowershellorCmdCommandIfNecessary(command string) string {
 		return "echo 'overwrite' | Out-File -FilePath C:\\mnt\\test-1\\data.txt; Start-Sleep 3600"
 	case "grep 'hello world' /mnt/test-1/data":
 		return "Get-Content C:\\mnt\\test-1\\data.txt | findstr 'hello world'"
+	case "df -h | grep /mnt/test- | awk '{print $2}' | grep 20.0G":
+		return "fsutil volume diskfree C:\\mnt\\ | Select-String 'Total bytes' | Select-String '19.9 GB'"
 	}
 
 	return command
