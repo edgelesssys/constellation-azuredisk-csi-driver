@@ -2,7 +2,7 @@ image:
   baseRepo: mcr.microsoft.com
   azuredisk:
     repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
-    tag: v1.3.0-rc1
+    tag: v1.3.0@sha256:1e798f066ef78c293c4c87a31677f8948be4c8709980135969b73a9d7a46ca71
     pullPolicy: IfNotPresent
   csiProvisioner:
     repository: /oss/kubernetes-csi/csi-provisioner
