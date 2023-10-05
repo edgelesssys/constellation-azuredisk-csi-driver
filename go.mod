@@ -44,7 +44,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/edgelesssys/constellation/v2 v2.11.1-0.20231004113211-6eb99fef3499
+require github.com/edgelesssys/constellation/v2 v2.11.1-0.20231005092022-f69ae2612236
 
 replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20230705150314-d8c07bd1723c
 
