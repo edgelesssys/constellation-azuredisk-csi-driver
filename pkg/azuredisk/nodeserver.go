@@ -297,7 +297,7 @@ func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolu
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "Unable to parse disk URI: %v", err)
 		}
-		source := filepath.Join("/dev/mapper", diskName)
+		source = filepath.Join("/dev/mapper", diskName)
 
 		klog.V(2).Infof("NodePublishVolume [block]: found device path %s", source)
 		err = d.ensureBlockTargetFile(target)
