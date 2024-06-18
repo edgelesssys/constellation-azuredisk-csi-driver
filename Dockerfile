@@ -1,8 +1,8 @@
-FROM debian:bullseye AS build
+FROM debian:bookworm AS build
 
 ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get install -y build-essential git wget pkg-config libcryptsetup12 libcryptsetup-dev
-ARG GO_VER=1.21.1
+ARG GO_VER=1.22.4
 RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz

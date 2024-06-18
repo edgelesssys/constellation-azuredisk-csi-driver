@@ -62,7 +62,7 @@ type DriverOptions struct {
 	DisableAVSetNodes            bool
 
 	// [Edgeless] Constellation options
-	KMSAddr                      string
+	KMSAddr string
 }
 
 func (o *DriverOptions) AddFlags() *flag.FlagSet {

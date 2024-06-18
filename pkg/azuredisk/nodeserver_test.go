@@ -1061,6 +1061,8 @@ func TestNodeUnpublishVolume(t *testing.T) {
 }
 
 func TestNodeExpandVolume(t *testing.T) {
+	t.Skip("Skipping expansion test relying on external binaries")
+
 	cntl := gomock.NewController(t)
 	defer cntl.Finish()
 	d, _ := NewFakeDriver(cntl)

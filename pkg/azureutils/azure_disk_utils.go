@@ -195,7 +195,7 @@ func GetCloudProviderFromClient(ctx context.Context, kubeClient clientset.Interf
 			K8sSecretConfig: configloader.K8sSecretConfig{
 				SecretName:      secretName,
 				SecretNamespace: secretNamespace,
-				CloudConfigKey:  "cloud-config",
+				CloudConfigKey:  "azure.json",
 			},
 			KubeClient: kubeClient,
 		}, nil)
