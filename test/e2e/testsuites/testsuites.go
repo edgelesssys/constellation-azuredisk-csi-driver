@@ -818,7 +818,7 @@ func (t *TestPod) Create(ctx context.Context) {
 }
 
 func (t *TestPod) WaitForSuccess(ctx context.Context) {
-	err := e2epod.WaitForPodSuccessInNamespaceSlow(ctx, t.client, t.pod.Name, t.namespace.Name)
+	err := e2epod.WaitForPodSuccessInNamespace(ctx, t.client, t.pod.Name, t.namespace.Name)
 	framework.ExpectNoError(err)
 }
 
