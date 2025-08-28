@@ -171,7 +171,9 @@ var _ = ginkgo.Describe("Pre-Provisioned", func() {
 			req := makeCreateVolumeReq("invalid-maxShares", 256)
 			req.Parameters = map[string]string{"maxShares": "0"}
 			_, err := azurediskDriver.CreateVolume(ctx, req)
-			framework.ExpectError(err)
+			if err == nil {
+				ginkgo.Fail("expected error when creating volume with invalid maxShares, but got none")
+			}
 		})
 
 		ginkgo.It("should succeed when attaching a shared block volume to multiple pods [disk.csi.azure.com][shared disk]", func(ctx ginkgo.SpecContext) {
